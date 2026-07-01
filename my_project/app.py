@@ -3,45 +3,204 @@ import pandas as pd
 import numpy as np
 import joblib
 import matplotlib.pyplot as plt
+import matplotlib
+matplotlib.rcParams['figure.facecolor'] = '#FAFAFA'
+matplotlib.rcParams['axes.facecolor'] = '#FAFAFA'
 
 st.set_page_config(
-    page_title="High Risk Pregnancy Predictor",
-    page_icon="🤰",
-    layout="centered"
+    page_title="MaternaAI — Pregnancy Risk Predictor",
+    page_icon="🌸",
+    layout="wide"
 )
 
 st.markdown("""
-    <style>
-        .main { background-color: #f8f9fa; }
-        .title {
-            text-align: center;
-            color: #c0392b;
-            font-size: 2.2rem;
-            font-weight: bold;
-            margin-bottom: 0px;
-        }
-        .subtitle {
-            text-align: center;
-            color: #7f8c8d;
-            font-size: 1rem;
-            margin-bottom: 30px;
-        }
-        .section-header {
-            background-color: #c0392b;
-            color: white;
-            padding: 8px 16px;
-            border-radius: 8px;
-            font-size: 1.1rem;
-            font-weight: bold;
-            margin-bottom: 15px;
-        }
-    </style>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Playfair+Display:wght@500;600&display=swap');
+
+html, body, [class*="css"] {
+    font-family: 'DM Sans', sans-serif;
+    background-color: #F7F3F0;
+}
+
+.stApp {
+    background: linear-gradient(160deg, #FDF6F2 0%, #F3EEF8 50%, #EEF4F2 100%);
+}
+
+/* Hide streamlit default header */
+#MainMenu, footer, header { visibility: hidden; }
+
+/* Hero banner */
+.hero {
+    background: linear-gradient(135deg, #F9E8E8 0%, #EDE8F7 50%, #E8F2EE 100%);
+    border-radius: 20px;
+    padding: 40px 48px;
+    margin-bottom: 32px;
+    border: 1px solid rgba(200,180,220,0.3);
+}
+.hero h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 2.4rem;
+    font-weight: 600;
+    color: #3D2C5E;
+    margin: 0 0 8px 0;
+    letter-spacing: -0.5px;
+}
+.hero p {
+    font-size: 1rem;
+    color: #7A6E8A;
+    margin: 0;
+    font-weight: 300;
+}
+
+/* Cards */
+.card {
+    background: #FFFFFF;
+    border-radius: 16px;
+    padding: 28px 32px;
+    margin-bottom: 24px;
+    border: 1px solid #EDE8F0;
+    box-shadow: 0 2px 16px rgba(100,80,140,0.06);
+}
+.card-title {
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: #A89DC0;
+    margin-bottom: 20px;
+}
+
+/* Section divider label */
+.section-label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #B8A8C8;
+    margin: 32px 0 16px 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: #EDE8F0;
+}
+
+/* Result boxes */
+.result-high {
+    background: linear-gradient(135deg, #FDE8E8, #FAD5D5);
+    border: 1px solid #F5B8B8;
+    border-radius: 16px;
+    padding: 28px 32px;
+    margin: 16px 0;
+}
+.result-high h2 {
+    color: #C0392B;
+    font-family: 'Playfair Display', serif;
+    font-size: 1.6rem;
+    margin: 0 0 8px 0;
+}
+.result-high p { color: #8B3030; margin: 0; font-size: 0.95rem; }
+
+.result-safe {
+    background: linear-gradient(135deg, #E8F5EE, #D5EDE0);
+    border: 1px solid #A8D8BC;
+    border-radius: 16px;
+    padding: 28px 32px;
+    margin: 16px 0;
+}
+.result-safe h2 {
+    color: #1E7A48;
+    font-family: 'Playfair Display', serif;
+    font-size: 1.6rem;
+    margin: 0 0 8px 0;
+}
+.result-safe p { color: #2D5E40; margin: 0; font-size: 0.95rem; }
+
+/* Probability badge */
+.prob-badge {
+    display: inline-block;
+    background: #F3EEF8;
+    border: 1px solid #D4C8E8;
+    border-radius: 40px;
+    padding: 6px 20px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #5A4080;
+    margin-top: 12px;
+}
+
+/* Input styling */
+div[data-testid="stNumberInput"] label,
+div[data-testid="stSelectbox"] label,
+div[data-testid="stSlider"] label {
+    font-size: 0.82rem !important;
+    font-weight: 500 !important;
+    color: #5A4E6A !important;
+    letter-spacing: 0.3px !important;
+}
+
+div[data-testid="stNumberInput"] input {
+    border-radius: 10px !important;
+    border-color: #DDD5E8 !important;
+    background: #FAFAF8 !important;
+}
+
+/* Predict button */
+div[data-testid="stButton"] > button {
+    background: linear-gradient(135deg, #7C5CBF, #5A8ABF) !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 12px !important;
+    padding: 14px 32px !important;
+    font-size: 1rem !important;
+    font-weight: 500 !important;
+    font-family: 'DM Sans', sans-serif !important;
+    letter-spacing: 0.3px !important;
+    width: 100% !important;
+    transition: opacity 0.2s !important;
+    box-shadow: 0 4px 16px rgba(124,92,191,0.25) !important;
+}
+div[data-testid="stButton"] > button:hover {
+    opacity: 0.88 !important;
+}
+
+/* Warning tags */
+.factor-tag {
+    background: #FEF3E8;
+    border-left: 3px solid #E8923A;
+    border-radius: 0 8px 8px 0;
+    padding: 10px 16px;
+    margin: 8px 0;
+    font-size: 0.88rem;
+    color: #7A4A1E;
+}
+.factor-tag strong { color: #C0622A; }
+
+/* Footer */
+.footer {
+    text-align: center;
+    font-size: 0.75rem;
+    color: #B0A8B8;
+    margin-top: 40px;
+    padding-top: 20px;
+    border-top: 1px solid #EDE8F0;
+}
+</style>
 """, unsafe_allow_html=True)
 
-st.markdown('<p class="title">🤰 High Risk Pregnancy Predictor</p>', unsafe_allow_html=True)
-st.markdown('<p class="subtitle">Enter patient health details to predict pregnancy risk using AI</p>', unsafe_allow_html=True)
-st.markdown("---")
+# ── Hero ──────────────────────────────────────────────────────────────────────
+st.markdown("""
+<div class="hero">
+    <h1>🌸 MaternaAI</h1>
+    <p>Clinical pregnancy risk assessment powered by machine learning — enter patient vitals to receive an instant risk prediction with AI-driven explanation.</p>
+</div>
+""", unsafe_allow_html=True)
 
+# ── Load model ────────────────────────────────────────────────────────────────
 @st.cache_resource
 def load_all():
     model         = joblib.load('logistic_model.pkl')
@@ -50,36 +209,62 @@ def load_all():
 
 model, feature_names = load_all()
 
-st.markdown('<div class="section-header">📋 Patient Health Parameters</div>', unsafe_allow_html=True)
+normal_ranges = {
+    'age_years':                (18, 35),
+    'systolic_bp_mmHg':         (90, 120),
+    'diastolic_bp_mmHg':        (60, 80),
+    'random_blood_sugar_mg_dL': (70, 140),
+    'body_temperature_F':       (97.0, 99.0),
+    'heart_rate_bpm':           (60, 100),
+    'hemoglobin_g_dL':          (11.0, 15.0),
+    'hba1c_percent':            (4.0, 5.6),
+    'respiratory_rate_bpm':     (12, 20),
+    'bmi':                      (18.5, 24.9),
+    'spo2_percent':             (95, 100),
+    'edema_severity':           (0, 0),
+    'symptoms_score_0_10':      (0, 3)
+}
 
-col1, col2 = st.columns(2)
+# ── Input Form ────────────────────────────────────────────────────────────────
+st.markdown('<p class="section-label">Patient Information</p>', unsafe_allow_html=True)
+
+col1, col2, col3 = st.columns(3)
 
 with col1:
-    age                = st.number_input("🎂 Age (years)",               min_value=10,   max_value=60,    value=25)
-    gravida            = st.number_input("🤱 Gravida (G)",               min_value=0,    max_value=15,    value=1)
-    para               = st.number_input("👶 Para (P)",                  min_value=0,    max_value=15,    value=0)
-    live_child         = st.number_input("🧒 Live Children (L)",         min_value=0,    max_value=15,    value=0)
-    abortion           = st.number_input("⚠️ Abortions (A)",             min_value=0,    max_value=10,    value=0)
-    death              = st.number_input("💔 Deaths (D)",                min_value=0,    max_value=10,    value=0)
-    gestational_age    = st.number_input("📅 Gestational Age (weeks)",   min_value=1,    max_value=42,    value=20)
-    systolic_bp        = st.number_input("🩺 Systolic BP (mmHg)",        min_value=70,   max_value=200,   value=120)
-    diastolic_bp       = st.number_input("🩺 Diastolic BP (mmHg)",       min_value=40,   max_value=130,   value=80)
-    random_blood_sugar = st.number_input("🩸 Blood Sugar (mg/dL)",       min_value=50,   max_value=400,   value=100)
+    st.markdown('<div class="card"><p class="card-title">Obstetric History</p>', unsafe_allow_html=True)
+    age             = st.number_input("Age (years)",             min_value=10,  max_value=60,  value=25)
+    gravida         = st.number_input("Gravida (G)",             min_value=0,   max_value=15,  value=1)
+    para            = st.number_input("Para (P)",                min_value=0,   max_value=15,  value=0)
+    live_child      = st.number_input("Live Children (L)",       min_value=0,   max_value=15,  value=0)
+    abortion        = st.number_input("Abortions (A)",           min_value=0,   max_value=10,  value=0)
+    death           = st.number_input("Deaths (D)",              min_value=0,   max_value=10,  value=0)
+    gestational_age = st.number_input("Gestational Age (weeks)", min_value=1,   max_value=42,  value=20)
+    st.markdown('</div>', unsafe_allow_html=True)
 
 with col2:
-    body_temp          = st.number_input("🌡️ Body Temperature (F)",      min_value=95.0, max_value=106.0, value=98.6, step=0.1)
-    heart_rate         = st.number_input("❤️ Heart Rate (bpm)",          min_value=40,   max_value=180,   value=80)
-    hemoglobin         = st.number_input("💉 Hemoglobin (g/dL)",         min_value=4.0,  max_value=20.0,  value=11.0, step=0.1)
-    hba1c              = st.number_input("🔬 HbA1c (%)",                 min_value=3.0,  max_value=15.0,  value=5.5,  step=0.1)
-    respiratory_rate   = st.number_input("🫁 Respiratory Rate (bpm)",    min_value=10,   max_value=40,    value=18)
-    bmi                = st.number_input("⚖️ BMI",                       min_value=10.0, max_value=50.0,  value=22.0, step=0.1)
-    spo2               = st.number_input("🫀 SpO2 (%)",                  min_value=70,   max_value=100,   value=98)
-    edema_severity     = st.selectbox("🦵 Edema Severity",               options=[0, 1, 2, 3], index=0)
-    symptoms_score     = st.slider("📊 Symptoms Score (0-10)",           min_value=0,    max_value=10,    value=2)
+    st.markdown('<div class="card"><p class="card-title">Vital Signs</p>', unsafe_allow_html=True)
+    systolic_bp        = st.number_input("Systolic BP (mmHg)",       min_value=70,   max_value=200,   value=120)
+    diastolic_bp       = st.number_input("Diastolic BP (mmHg)",      min_value=40,   max_value=130,   value=80)
+    heart_rate         = st.number_input("Heart Rate (bpm)",          min_value=40,   max_value=180,   value=80)
+    body_temp          = st.number_input("Body Temperature (°F)",     min_value=95.0, max_value=106.0, value=98.6, step=0.1)
+    respiratory_rate   = st.number_input("Respiratory Rate (bpm)",    min_value=10,   max_value=40,    value=18)
+    spo2               = st.number_input("SpO2 (%)",                  min_value=70,   max_value=100,   value=98)
+    st.markdown('</div>', unsafe_allow_html=True)
 
-st.markdown("---")
+with col3:
+    st.markdown('<div class="card"><p class="card-title">Lab & Clinical</p>', unsafe_allow_html=True)
+    random_blood_sugar = st.number_input("Blood Sugar (mg/dL)",  min_value=50,   max_value=400,   value=100)
+    hemoglobin         = st.number_input("Hemoglobin (g/dL)",    min_value=4.0,  max_value=20.0,  value=11.0, step=0.1)
+    hba1c              = st.number_input("HbA1c (%)",            min_value=3.0,  max_value=15.0,  value=5.5,  step=0.1)
+    bmi                = st.number_input("BMI",                  min_value=10.0, max_value=50.0,  value=22.0, step=0.1)
+    edema_severity     = st.selectbox("Edema Severity",          options=[0, 1, 2, 3], index=0)
+    symptoms_score     = st.slider("Symptoms Score (0–10)",      min_value=0,    max_value=10,    value=2)
+    st.markdown('</div>', unsafe_allow_html=True)
 
-if st.button("🔍 Predict Risk", use_container_width=True):
+st.markdown("<br>", unsafe_allow_html=True)
+
+# ── Predict ───────────────────────────────────────────────────────────────────
+if st.button("Run Risk Assessment →"):
 
     raw_input = {
         'age_years':                age,
@@ -113,7 +298,7 @@ if st.button("🔍 Predict Risk", use_container_width=True):
 
     high_risk_rules = (
         systolic_bp > 140 or
-        diastolic_bp > 90  or
+        diastolic_bp > 90 or
         random_blood_sugar > 200 or
         hba1c > 7.5 or
         spo2 < 90 or
@@ -123,63 +308,109 @@ if st.button("🔍 Predict Risk", use_container_width=True):
 
     prediction = 1 if (probability >= 0.30 or high_risk_rules) else 0
 
-    st.markdown('<div class="section-header">🎯 Prediction Result</div>', unsafe_allow_html=True)
+    st.markdown('<p class="section-label">Assessment Result</p>', unsafe_allow_html=True)
 
-    if prediction == 1:
-        st.error("🔴  HIGH RISK DETECTED")
-        if high_risk_rules:
-            st.metric(label="Risk Probability", value="High ⚠️", help="Flagged by clinical rules")
+    res_col, xai_col = st.columns([1, 1.6])
+
+    with res_col:
+        if prediction == 1:
+            prob_display = "Clinical threshold exceeded" if high_risk_rules else f"{round(probability * 100, 1)}% risk probability"
+            st.markdown(f"""
+            <div class="result-high">
+                <h2>⚠ High Risk</h2>
+                <p>Immediate clinical attention recommended.</p>
+                <div class="prob-badge">{prob_display}</div>
+            </div>
+            """, unsafe_allow_html=True)
         else:
-            st.metric(label="Risk Probability", value=f"{round(probability * 100, 2)}%")
-        st.warning("⚠️ This patient requires immediate medical attention and close monitoring.")
-    else:
-        st.success("🟢  NO RISK DETECTED")
-        st.metric(label="Risk Probability", value=f"{round(probability * 100, 2)}%")
-        st.info("✅ Patient appears to be in a normal condition. Routine checkup recommended.")
+            st.markdown(f"""
+            <div class="result-safe">
+                <h2>✓ Low Risk</h2>
+                <p>Patient vitals appear within acceptable range.</p>
+                <div class="prob-badge">{round(probability * 100, 1)}% risk probability</div>
+            </div>
+            """, unsafe_allow_html=True)
 
-    st.markdown("---")
-    st.markdown('<div class="section-header">🧠 Why this Prediction? (Explainable AI)</div>', unsafe_allow_html=True)
-    st.markdown("The chart below shows which health factors influenced the prediction the most.")
+        # Clinical flags
+        flags = []
+        if systolic_bp > 140:  flags.append(f"Systolic BP {systolic_bp} mmHg — above 140 threshold")
+        if diastolic_bp > 90:  flags.append(f"Diastolic BP {diastolic_bp} mmHg — above 90 threshold")
+        if random_blood_sugar > 200: flags.append(f"Blood sugar {random_blood_sugar} mg/dL — above 200")
+        if hba1c > 7.5:        flags.append(f"HbA1c {hba1c}% — above 7.5 threshold")
+        if spo2 < 90:          flags.append(f"SpO2 {spo2}% — below 90 threshold")
+        if hemoglobin < 7.0:   flags.append(f"Hemoglobin {hemoglobin} g/dL — below 7.0")
+        if bmi > 35:           flags.append(f"BMI {bmi} — above 35 threshold")
 
-    coefficients = model.coef_[0]
-    input_values = input_df.values[0]
-    impact       = coefficients * input_values
+        if flags:
+            st.markdown("<br>", unsafe_allow_html=True)
+            st.markdown('<p class="card-title" style="color:#C0622A;letter-spacing:1.5px;font-size:0.72rem;">CLINICAL FLAGS</p>', unsafe_allow_html=True)
+            for f in flags:
+                st.markdown(f'<div class="factor-tag"><strong>↑</strong> {f}</div>', unsafe_allow_html=True)
 
-    xai_df = pd.DataFrame({
-        'Feature': feature_names,
-        'Impact':  impact
-    })
-    xai_df = xai_df[xai_df['Impact'] != 0]
-    xai_df = xai_df.sort_values('Impact', key=abs, ascending=False).head(10)
+    with xai_col:
+        st.markdown('<div class="card">', unsafe_allow_html=True)
+        st.markdown('<p class="card-title">Explainable AI — Key Influencing Factors</p>', unsafe_allow_html=True)
 
-    if xai_df.empty:
-        st.warning("Not enough data to show explanation.")
-    else:
-        colors = ['#e74c3c' if v > 0 else '#2ecc71' for v in xai_df['Impact']]
+        coefficients = model.coef_[0]
+        input_values = input_df.values[0]
+        impact       = coefficients * input_values
 
-        fig, ax = plt.subplots(figsize=(9, 5))
-        ax.barh(xai_df['Feature'], xai_df['Impact'], color=colors, edgecolor='white', height=0.6)
-        ax.axvline(0, color='black', linewidth=1)
-        ax.set_xlabel('Impact on Prediction', fontsize=11)
-        ax.set_title('Top Factors Influencing This Prediction', fontsize=13, fontweight='bold')
-        ax.invert_yaxis()
-        ax.spines['top'].set_visible(False)
-        ax.spines['right'].set_visible(False)
-        plt.tight_layout()
-        st.pyplot(fig)
+        xai_df = pd.DataFrame({
+            'Feature': list(feature_names),
+            'Value':   input_values,
+            'Impact':  impact
+        })
+        xai_df = xai_df.sort_values('Impact', key=abs, ascending=False).head(10)
 
-        col_a, col_b = st.columns(2)
-        with col_a:
-            st.error("🔴 Red bars → Push towards HIGH RISK")
-        with col_b:
-            st.success("🟢 Green bars → Push towards NO RISK")
+        if xai_df['Impact'].abs().max() < 1e-9:
+            st.info("Insufficient variation in inputs to generate factor explanation.")
+        else:
+            colors = ['#E8837A' if v > 0 else '#72BFA0' for v in xai_df['Impact']]
 
-        st.caption("Longer bar = More impact on the prediction")
+            fig, ax = plt.subplots(figsize=(7, 4))
+            fig.patch.set_facecolor('#FFFFFF')
+            ax.set_facecolor('#FFFFFF')
+            bars = ax.barh(xai_df['Feature'], xai_df['Impact'], color=colors, height=0.55)
+            ax.axvline(0, color='#CCCCCC', linewidth=0.8)
+            ax.set_xlabel('Impact on Risk Score', fontsize=9, color='#888888')
+            ax.tick_params(axis='both', labelsize=8, colors='#666666')
+            ax.spines['top'].set_visible(False)
+            ax.spines['right'].set_visible(False)
+            ax.spines['left'].set_color('#EEEEEE')
+            ax.spines['bottom'].set_color('#EEEEEE')
+            ax.invert_yaxis()
+            plt.tight_layout()
+            st.pyplot(fig)
+            plt.close()
 
-        top_feature = xai_df.iloc[0]['Feature']
-        top_value   = xai_df.iloc[0]['Impact']
-        direction   = "increased" if top_value > 0 else "decreased"
-        st.info(f"📌 Most influential factor: **{top_feature}** — it {direction} the risk for this patient.")
+            lcol, rcol = st.columns(2)
+            with lcol:
+                st.markdown('<span style="font-size:0.78rem;color:#B05050;">🟥 Red — increases risk</span>', unsafe_allow_html=True)
+            with rcol:
+                st.markdown('<span style="font-size:0.78rem;color:#2E7D5A;">🟩 Green — reduces risk</span>', unsafe_allow_html=True)
 
-    st.markdown("---")
-    st.caption("This tool is for medical assistance only. Always consult a qualified doctor for diagnosis.")
+            top = xai_df.iloc[0]
+            top_name = str(top['Feature']).replace('_', ' ').title()
+            direction = "elevated" if top['Impact'] > 0 else "reduced"
+            st.markdown(f"<br><span style='font-size:0.88rem;color:#5A4080;'>📌 <b>{top_name}</b> had the strongest influence — it {direction} the predicted risk for this patient.</span>", unsafe_allow_html=True)
+
+            risky = xai_df[xai_df['Impact'] > 0].head(3)
+            if not risky.empty:
+                st.markdown("<br>", unsafe_allow_html=True)
+                st.markdown('<p class="card-title" style="color:#A89DC0;letter-spacing:1.5px;font-size:0.72rem;">TOP RISK-RAISING FACTORS</p>', unsafe_allow_html=True)
+                for _, row in risky.iterrows():
+                    fkey = str(row['Feature'])
+                    val  = row['Value']
+                    if fkey in normal_ranges:
+                        lo, hi = normal_ranges[fkey]
+                        if val > hi:
+                            note = f"value {val} exceeds normal max of {hi}"
+                        elif val < lo:
+                            note = f"value {val} is below normal min of {lo}"
+                        else:
+                            note = f"value {val} is within range but contributing"
+                        st.markdown(f'<div class="factor-tag"><strong>{fkey.replace("_"," ").title()}</strong> — {note}</div>', unsafe_allow_html=True)
+
+        st.markdown('</div>', unsafe_allow_html=True)
+
+st.markdown('<div class="footer">MaternaAI is a clinical decision-support tool. Always confirm findings with a qualified healthcare professional.</div>', unsafe_allow_html=True)
