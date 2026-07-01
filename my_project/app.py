@@ -192,7 +192,7 @@ div[data-testid="stButton"] > button:hover {
 </style>
 """, unsafe_allow_html=True)
 
-# ── Hero ──────────────────────────────────────────────────────────────────────
+
 st.markdown("""
 <div class="hero">
     <h1>🌸 MaternaAI</h1>
