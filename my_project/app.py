@@ -349,67 +349,51 @@ if st.button("Run Risk Assessment →"):
 
     with xai_col:
         st.markdown('<div class="card">', unsafe_allow_html=True)
-        st.markdown('<p class="card-title">Explainable AI — Key Influencing Factors</p>', unsafe_allow_html=True)
+        st.markdown('<p class="card-title">🧠 Explainable AI — Why this Prediction?</p>', unsafe_allow_html=True)
 
-        coefficients = model.coef_[0]
-        input_values = input_df.values[0]
-        impact       = coefficients * input_values
+        checks = [
+            (systolic_bp,        90,   140,  'Systolic BP',      'mmHg'),
+            (diastolic_bp,       60,   90,   'Diastolic BP',     'mmHg'),
+            (random_blood_sugar, 70,   140,  'Blood Sugar',      'mg/dL'),
+            (hba1c,              4.0,  5.6,  'HbA1c',            '%'),
+            (hemoglobin,         11.0, 15.0, 'Hemoglobin',       'g/dL'),
+            (bmi,                18.5, 24.9, 'BMI',              ''),
+            (spo2,               95,   100,  'SpO2',             '%'),
+            (body_temp,          97.0, 99.0, 'Body Temperature', '°F'),
+            (heart_rate,         60,   100,  'Heart Rate',       'bpm'),
+            (respiratory_rate,   12,   20,   'Respiratory Rate', 'bpm'),
+            (symptoms_score,     0,    3,    'Symptoms Score',   ''),
+            (age,                18,   35,   'Age',              'yrs'),
+        ]
 
-        xai_df = pd.DataFrame({
-            'Feature': list(feature_names),
-            'Value':   input_values,
-            'Impact':  impact
-        })
-        xai_df = xai_df.sort_values('Impact', key=abs, ascending=False).head(10)
+        high_factors  = []
+        low_factors   = []
+        normal_factors = []
 
-        if xai_df['Impact'].abs().max() < 1e-9:
-            st.info("Insufficient variation in inputs to generate factor explanation.")
-        else:
-            colors = ['#E8837A' if v > 0 else '#72BFA0' for v in xai_df['Impact']]
+        for val, lo, hi, label, unit in checks:
+            u = f" {unit}" if unit else ""
+            if val > hi:
+                high_factors.append(f"<b>{label}</b> is {val}{u} — above normal range ({lo}–{hi}{u})")
+            elif val < lo:
+                low_factors.append(f"<b>{label}</b> is {val}{u} — below normal range ({lo}–{hi}{u})")
+            else:
+                normal_factors.append(f"<b>{label}</b> is {val}{u} — within normal range ✓")
 
-            fig, ax = plt.subplots(figsize=(7, 4))
-            fig.patch.set_facecolor('#FFFFFF')
-            ax.set_facecolor('#FFFFFF')
-            bars = ax.barh(xai_df['Feature'], xai_df['Impact'], color=colors, height=0.55)
-            ax.axvline(0, color='#CCCCCC', linewidth=0.8)
-            ax.set_xlabel('Impact on Risk Score', fontsize=9, color='#888888')
-            ax.tick_params(axis='both', labelsize=8, colors='#666666')
-            ax.spines['top'].set_visible(False)
-            ax.spines['right'].set_visible(False)
-            ax.spines['left'].set_color('#EEEEEE')
-            ax.spines['bottom'].set_color('#EEEEEE')
-            ax.invert_yaxis()
-            plt.tight_layout()
-            st.pyplot(fig)
-            plt.close()
+        if high_factors:
+            st.markdown('<p class="card-title" style="color:#C0622A;font-size:0.72rem;letter-spacing:1.5px;">⬆ ELEVATED PARAMETERS</p>', unsafe_allow_html=True)
+            for f in high_factors:
+                st.markdown(f'<div class="factor-tag">⬆ {f}</div>', unsafe_allow_html=True)
 
-            lcol, rcol = st.columns(2)
-            with lcol:
-                st.markdown('<span style="font-size:0.78rem;color:#B05050;">🟥 Red — increases risk</span>', unsafe_allow_html=True)
-            with rcol:
-                st.markdown('<span style="font-size:0.78rem;color:#2E7D5A;">🟩 Green — reduces risk</span>', unsafe_allow_html=True)
+        if low_factors:
+            st.markdown('<br>', unsafe_allow_html=True)
+            st.markdown('<p class="card-title" style="color:#2A5EA0;font-size:0.72rem;letter-spacing:1.5px;">⬇ LOW PARAMETERS</p>', unsafe_allow_html=True)
+            for f in low_factors:
+                st.markdown(f'<div class="factor-tag" style="border-left-color:#5A8ABF;background:#EEF3FE;color:#1A3060;">⬇ {f}</div>', unsafe_allow_html=True)
 
-            top = xai_df.iloc[0]
-            top_name = str(top['Feature']).replace('_', ' ').title()
-            direction = "elevated" if top['Impact'] > 0 else "reduced"
-            st.markdown(f"<br><span style='font-size:0.88rem;color:#5A4080;'>📌 <b>{top_name}</b> had the strongest influence — it {direction} the predicted risk for this patient.</span>", unsafe_allow_html=True)
-
-            risky = xai_df[xai_df['Impact'] > 0].head(3)
-            if not risky.empty:
-                st.markdown("<br>", unsafe_allow_html=True)
-                st.markdown('<p class="card-title" style="color:#A89DC0;letter-spacing:1.5px;font-size:0.72rem;">TOP RISK-RAISING FACTORS</p>', unsafe_allow_html=True)
-                for _, row in risky.iterrows():
-                    fkey = str(row['Feature'])
-                    val  = row['Value']
-                    if fkey in normal_ranges:
-                        lo, hi = normal_ranges[fkey]
-                        if val > hi:
-                            note = f"value {val} exceeds normal max of {hi}"
-                        elif val < lo:
-                            note = f"value {val} is below normal min of {lo}"
-                        else:
-                            note = f"value {val} is within range but contributing"
-                        st.markdown(f'<div class="factor-tag"><strong>{fkey.replace("_"," ").title()}</strong> — {note}</div>', unsafe_allow_html=True)
+        st.markdown('<br>', unsafe_allow_html=True)
+        st.markdown('<p class="card-title" style="color:#2E7D5A;font-size:0.72rem;letter-spacing:1.5px;">✓ NORMAL PARAMETERS</p>', unsafe_allow_html=True)
+        for f in normal_factors:
+            st.markdown(f'<div class="factor-tag" style="border-left-color:#72BFA0;background:#EEF7F2;color:#1A4A30;">✓ {f}</div>', unsafe_allow_html=True)
 
         st.markdown('</div>', unsafe_allow_html=True)
 
