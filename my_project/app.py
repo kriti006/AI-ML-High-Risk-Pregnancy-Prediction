@@ -29,7 +29,7 @@ html, body, [class*="css"] {
 /* Hide streamlit default header */
 #MainMenu, footer, header { visibility: hidden; }
 
-/* Hero banner */
+
 .hero {
     background: linear-gradient(135deg, #F9E8E8 0%, #EDE8F7 50%, #E8F2EE 100%);
     border-radius: 20px;
