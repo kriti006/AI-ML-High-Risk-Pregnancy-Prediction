@@ -4,6 +4,7 @@ import numpy as np
 import joblib
 import matplotlib.pyplot as plt
 import matplotlib
+from catboost import CatBoostClassifier
 
 matplotlib.rcParams['figure.facecolor'] = '#FAFAFA'
 matplotlib.rcParams['axes.facecolor'] = '#FAFAFA'
@@ -167,6 +168,19 @@ header {
 }
 
 
+.prob-badge {
+    display: inline-block;
+    background: #F3EEF8;
+    border: 1px solid #D4C8E8;
+    border-radius: 40px;
+    padding: 6px 20px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #5A4080;
+    margin-top: 12px;
+}
+
+
 div[data-testid="stNumberInput"] label,
 div[data-testid="stSelectbox"] label,
 div[data-testid="stSlider"] label,
@@ -326,7 +340,7 @@ if not st.session_state.logged_in:
     st.stop()
 
 # =========================
-# STEP 2 — WELCOME PAGE WITH ICON (leads to parameters)
+# STEP 2 — WELCOME PAGE 
 # =========================
 if not st.session_state.started:
     top_l, top_r = st.columns([6, 1])
@@ -370,7 +384,7 @@ if not st.session_state.started:
     st.stop()
 
 # =========================
-# STEP 3 — PARAMETERS + ASSESSMENT (original app flow)
+# STEP 3 — PARAMETERS 
 # =========================
 back_l, back_r = st.columns([1, 8])
 with back_l:
@@ -390,10 +404,9 @@ st.markdown(f"""
 # =========================
 @st.cache_resource
 def load_all():
-    model = joblib.load("logistic_model.pkl")
-    feature_names = joblib.load("feature_names.pkl")
+    model = joblib.load("voting_model_presplit_smote.pkl")   
+    feature_names = joblib.load("feature_names_presplit_smote.pkl")  
     return model, feature_names
-
 
 model, feature_names = load_all()
 
@@ -483,37 +496,7 @@ if st.button("Check My Risk →"):
 
     probability = model.predict_proba(input_df)[0][1]
 
-    # ── Model-based explainability (true XAI) ──────────────────────────────
-    # Uses the logistic regression's OWN learned coefficients to show which
-    # inputs actually pushed THIS prediction up or down — this explains the
-    # model's decision itself, not just fixed clinical cutoffs.
-    model_contributions = None
-    try:
-        coefs = model.coef_[0]
-        input_values = input_df.iloc[0].values.astype(float)
-        contributions = coefs * input_values
-
-        feature_label_map = {
-            'age_years': 'Age', 'gravida_G': 'Gravida (G)', 'para_P': 'Para (P)',
-            'live_child_L': 'Live Children', 'abortion_A': 'Abortions', 'death_D': 'Deaths',
-            'gestational_age_weeks': 'Gestational Age', 'systolic_bp_mmHg': 'Systolic BP',
-            'diastolic_bp_mmHg': 'Diastolic BP', 'random_blood_sugar_mg_dL': 'Blood Sugar',
-            'body_temperature_F': 'Body Temperature', 'heart_rate_bpm': 'Heart Rate',
-            'hemoglobin_g_dL': 'Hemoglobin', 'hba1c_percent': 'HbA1c',
-            'respiratory_rate_bpm': 'Respiratory Rate', 'bmi': 'BMI',
-            'spo2_percent': 'SpO2', 'edema_severity': 'Edema Severity',
-            'symptoms_score_0_10': 'Symptoms Score'
-        }
-        labels = [feature_label_map.get(f, f) for f in feature_names]
-
-        contrib_df = pd.DataFrame({'Feature': labels, 'Contribution': contributions})
-        contrib_df['AbsContribution'] = contrib_df['Contribution'].abs()
-        contrib_df = contrib_df.sort_values('AbsContribution', ascending=False).head(6)
-        model_contributions = contrib_df
-    except Exception:
-        model_contributions = None
-
-    # ── High Risk rules (severe abnormality) ──────────────────────────────────
+    # ── High Risk rules  ──────────────────────────────────
     high_risk_flags = []
     if systolic_bp > 140:          high_risk_flags.append(f"Systolic BP {systolic_bp} mmHg > 140")
     if diastolic_bp > 90:          high_risk_flags.append(f"Diastolic BP {diastolic_bp} mmHg > 90")
@@ -525,7 +508,7 @@ if st.button("Check My Risk →"):
     if age > 40:                   high_risk_flags.append(f"Age {age} yrs > 40")
     if edema_severity >= 3:        high_risk_flags.append(f"Edema Severity {edema_severity} (severe)")
 
-    # ── Mild Risk rules (moderate abnormality) — inclusive boundaries ─────────
+    # ── Mild Risk rules ─────
     mild_risk_flags = []
     if 130 <= systolic_bp <= 140:          mild_risk_flags.append(f"Systolic BP {systolic_bp} mmHg (130–140)")
     if 85 <= diastolic_bp <= 90:           mild_risk_flags.append(f"Diastolic BP {diastolic_bp} mmHg (85–90)")
@@ -538,16 +521,10 @@ if st.button("Check My Risk →"):
     if edema_severity == 2:                mild_risk_flags.append(f"Edema Severity {edema_severity} (moderate)")
     if symptoms_score >= 6:                mild_risk_flags.append(f"Symptoms Score {symptoms_score}/10")
 
-    # ── Determine risk level — PURELY from the trained ML model's probability ──
-    # Thresholds below were calibrated using precision_recall_curve on the
-    # actual test set (x_test_scaled / y_test) from the training notebook,
-    # targeting ~85% recall on the "risk" class (missing a real risk case is
-    # far worse than an extra false alarm in a healthcare context).
-    #   - Low/Mild boundary  = 0.14  (recall ≈ 0.855, precision ≈ 0.20)
-    #   - Mild/High boundary = 0.40  (practical midpoint of the "at-risk" zone)
-    if probability >= 0.40:
+    # ── Determine risk level ───────────────────────────────────────────────
+    if high_risk_flags or probability >= 0.30 or len(mild_risk_flags) >= 3:
         risk_level = "HIGH"
-    elif probability >= 0.14:
+    elif mild_risk_flags:
         risk_level = "MILD"
     else:
         risk_level = "LOW"
@@ -562,14 +539,15 @@ if st.button("Check My Risk →"):
             <div class="result-high">
                 <h2>⚠ High Risk</h2>
                 <p>Please contact your doctor as soon as possible.</p>
+                <div class="prob-badge">ML Probability: {round(probability * 100, 1)}%</div>
             </div>
             """, unsafe_allow_html=True)
             if high_risk_flags:
-                st.markdown('<p class="card-title" style="color:#C0392B;letter-spacing:1.5px;font-size:0.72rem;margin-top:16px;">🔴 CLINICALLY CONCERNING VALUES (for reference)</p>', unsafe_allow_html=True)
+                st.markdown('<p class="card-title" style="color:#C0392B;letter-spacing:1.5px;font-size:0.72rem;margin-top:16px;">🔴 HIGH RISK FLAGS</p>', unsafe_allow_html=True)
                 for f in high_risk_flags:
                     st.markdown(f'<div class="factor-tag"><strong>↑</strong> {f}</div>', unsafe_allow_html=True)
             if mild_risk_flags:
-                st.markdown('<p class="card-title" style="color:#B7770D;letter-spacing:1.5px;font-size:0.72rem;margin-top:16px;">🟡 ALSO SLIGHTLY OUT OF RANGE</p>', unsafe_allow_html=True)
+                st.markdown('<p class="card-title" style="color:#B7770D;letter-spacing:1.5px;font-size:0.72rem;margin-top:16px;">🟡 ALSO MILD</p>', unsafe_allow_html=True)
                 for f in mild_risk_flags:
                     st.markdown(f'<div class="factor-tag" style="border-left-color:#E8C43A;background:#FEF9E8;color:#7A5010;"><strong>!</strong> {f}</div>', unsafe_allow_html=True)
 
@@ -578,10 +556,11 @@ if st.button("Check My Risk →"):
             <div class="result-mild">
                 <h2>⚡ Mild Risk</h2>
                 <p>A few things need watching. Please plan a follow-up with your doctor.</p>
+                <div class="prob-badge">ML Probability: {round(probability * 100, 1)}%</div>
             </div>
             """, unsafe_allow_html=True)
             if mild_risk_flags:
-                st.markdown('<p class="card-title" style="color:#B7770D;letter-spacing:1.5px;font-size:0.72rem;margin-top:16px;">🟡 PARAMETERS SLIGHTLY OUT OF RANGE (for reference)</p>', unsafe_allow_html=True)
+                st.markdown('<p class="card-title" style="color:#B7770D;letter-spacing:1.5px;font-size:0.72rem;margin-top:16px;">🟡 MILD RISK FLAGS</p>', unsafe_allow_html=True)
                 for f in mild_risk_flags:
                     st.markdown(f'<div class="factor-tag" style="border-left-color:#E8C43A;background:#FEF9E8;color:#7A5010;"><strong>!</strong> {f}</div>', unsafe_allow_html=True)
 
@@ -590,64 +569,21 @@ if st.button("Check My Risk →"):
             <div class="result-safe">
                 <h2>✓ Low Risk</h2>
                 <p>Your vitals look within the normal range. Keep up your routine check-ups!</p>
+                <div class="prob-badge">ML Probability: {round(probability * 100, 1)}%</div>
             </div>
             """, unsafe_allow_html=True)
 
-        # ── Debug / transparency panel ─────────────────────────────────────
+      
         st.markdown(f"""
         <div class="debug-box">
             <b>Quick summary</b><br>
-            Risk category decided by: AI model prediction<br>
-            Reference flags (not used in decision) — concerning: {len(high_risk_flags)}, borderline: {len(mild_risk_flags)}
+            Serious concerns found: {len(high_risk_flags)}<br>
+            Minor concerns found: {len(mild_risk_flags)}<br>
+            AI confidence in risk: {round(probability * 100, 1)}%
         </div>
         """, unsafe_allow_html=True)
 
     with xai_col:
-        st.markdown('<div class="card"><p class="card-title">🎯 What Drove the AI\'s Prediction</p>', unsafe_allow_html=True)
-
-        if model_contributions is not None and len(model_contributions) > 0:
-            st.markdown(
-                '<p style="font-size:0.85rem;color:#7A6E8A;margin-top:-8px;margin-bottom:16px;">'
-                "This is based on the AI model's own learned reasoning for your specific numbers — "
-                "not fixed cutoffs, but what the model itself weighed most heavily."
-                '</p>', unsafe_allow_html=True
-            )
-
-            plot_df = model_contributions.iloc[::-1]
-            colors = ['#C0392B' if v > 0 else '#1E7A48' for v in plot_df['Contribution']]
-
-            fig, ax = plt.subplots(figsize=(6, 3.2))
-            ax.barh(plot_df['Feature'], plot_df['Contribution'], color=colors)
-            ax.axvline(0, color='#999999', linewidth=0.8)
-            ax.set_xlabel('Effect on risk score', fontsize=9)
-            ax.tick_params(labelsize=9)
-            for spine in ['top', 'right']:
-                ax.spines[spine].set_visible(False)
-            fig.tight_layout()
-            st.pyplot(fig)
-            plt.close(fig)
-
-            top_row = model_contributions.iloc[0]
-            direction = "increased" if top_row['Contribution'] > 0 else "decreased"
-            border_color = "#C0392B" if top_row['Contribution'] > 0 else "#1E7A48"
-            st.markdown(
-                f'<div class="factor-tag" style="border-left-color:{border_color};">'
-                f'<strong>{top_row["Feature"]}</strong> had the single biggest effect — it {direction} '
-                f'your predicted risk the most.</div>', unsafe_allow_html=True
-            )
-            st.markdown(
-                '<p style="font-size:0.78rem;color:#A89DC0;margin-top:10px;">'
-                '🔴 Red = pushed risk higher &nbsp;&nbsp; 🟢 Green = pulled risk lower'
-                '</p>', unsafe_allow_html=True
-            )
-        else:
-            st.markdown(
-                '<p style="font-size:0.85rem;color:#7A6E8A;">Model-based explanation isn\'t available for this model type.</p>',
-                unsafe_allow_html=True
-            )
-
-        st.markdown('</div>', unsafe_allow_html=True)
-
         st.markdown('<div class="card"><p class="card-title">🧠 Why This Result? (In Simple Terms)</p>', unsafe_allow_html=True)
 
         checks = [
