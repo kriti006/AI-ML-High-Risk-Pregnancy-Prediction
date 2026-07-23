@@ -39,7 +39,48 @@ footer,
 header {
     visibility: hidden;
 }
-.hero {
+
+
+@keyframes floatSlow {
+    0%   { transform: translateY(0px) translateX(0px) scale(1); }
+    50%  { transform: translateY(-18px) translateX(10px) scale(1.05); }
+    100% { transform: translateY(0px) translateX(0px) scale(1); }
+}
+@keyframes floatSlow2 {
+    0%   { transform: translateY(0px) translateX(0px) scale(1); }
+    50%  { transform: translateY(16px) translateX(-14px) scale(1.08); }
+    100% { transform: translateY(0px) translateX(0px) scale(1); }
+}
+.blob {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(2px);
+    opacity: 0.55;
+    z-index: 0;
+    pointer-events: none;
+}
+.blob-1 {
+    width: 140px; height: 140px;
+    background: radial-gradient(circle at 30% 30%, #F3C9C9, #F9E8E8);
+    top: 10px; left: 6%;
+    animation: floatSlow 7s ease-in-out infinite;
+}
+.blob-2 {
+    width: 90px; height: 90px;
+    background: radial-gradient(circle at 30% 30%, #C9B9E8, #EDE8F7);
+    top: 60px; right: 10%;
+    animation: floatSlow2 8s ease-in-out infinite;
+}
+.blob-3 {
+    width: 60px; height: 60px;
+    background: radial-gradient(circle at 30% 30%, #A8D8BC, #E8F2EE);
+    bottom: 0px; left: 18%;
+    animation: floatSlow 6s ease-in-out infinite;
+}
+
+.hero {                           
+    position: relative;
+    overflow: hidden;
     background: linear-gradient(
         135deg,
         #F9E8E8 0%,
@@ -53,6 +94,8 @@ header {
 }
 
 .hero h1 {
+    position: relative;
+    z-index: 1;
     font-family: 'Playfair Display', serif;
     font-size: 2.4rem;
     font-weight: 600;
@@ -61,11 +104,30 @@ header {
 }
 
 .hero p {
+    position: relative;
+    z-index: 1;
     font-size: 1rem;
     color: #7A6E8A;
     margin: 0;
     font-weight: 300;
 }
+
+/* Small pill badge, e.g. "AI-Powered • Doctor-reviewed ranges" */
+.hero-badge {
+    position: relative;
+    z-index: 1;
+    display: inline-block;
+    background: rgba(255,255,255,0.65);
+    border: 1px solid rgba(200,180,220,0.5);
+    border-radius: 30px;
+    padding: 6px 18px;
+    font-size: 0.78rem;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    color: #5A4080;
+    margin-bottom: 18px;
+}
+
 .card {
     background: #FFFFFF;
     border-radius: 16px;
@@ -215,6 +277,12 @@ div[data-testid="stButton"] > button {
     font-weight: 500 !important;
     width: 100% !important;
     box-shadow: 0 4px 16px rgba(124, 92, 191, 0.25) !important;
+    transition: transform 0.15s ease, box-shadow 0.15s ease !important;
+}
+
+div[data-testid="stButton"] > button:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 8px 22px rgba(124, 92, 191, 0.35) !important;
 }
 
 
@@ -270,6 +338,12 @@ div[data-testid="stButton"] > button {
     text-align: center;
     box-shadow: 0 4px 20px rgba(100, 80, 140, 0.08);
     cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.param-icon-btn:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 30px rgba(100, 80, 140, 0.14);
 }
 
 .param-icon-btn .emoji {
@@ -288,6 +362,57 @@ div[data-testid="stButton"] > button {
     color: #7A6E8A;
     font-size: 0.85rem;
     margin: 0;
+}
+
+/* ===== Small feature strip on login page ===== */
+.feature-strip {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin: 28px 0 8px 0;
+}
+.feature-pill {
+    background: #FFFFFF;
+    border: 1px solid #EDE8F0;
+    border-radius: 14px;
+    padding: 14px 20px;
+    min-width: 150px;
+    text-align: center;
+    box-shadow: 0 2px 12px rgba(100, 80, 140, 0.06);
+}
+.feature-pill .emoji {
+    font-size: 1.6rem;
+    display: block;
+    margin-bottom: 6px;
+}
+.feature-pill .label {
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: #5A4E6A;
+}
+
+/* ===== Mini stat cards on welcome page ===== */
+.stat-card {
+    background: #FFFFFF;
+    border: 1px solid #EDE8F0;
+    border-radius: 14px;
+    padding: 18px 20px;
+    text-align: center;
+    box-shadow: 0 2px 12px rgba(100, 80, 140, 0.06);
+}
+.stat-card .num {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.5rem;
+    color: #3D2C5E;
+    font-weight: 600;
+}
+.stat-card .lbl {
+    font-size: 0.72rem;
+    color: #A89DC0;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 2px;
 }
 
 </style>
@@ -309,11 +434,24 @@ if "started" not in st.session_state:
 if not st.session_state.logged_in:
     st.markdown("""
     <div class="hero" style="text-align:center; padding: 64px 48px;">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+        <div class="hero-badge">✨ AI-Powered &nbsp;•&nbsp; Doctor-reviewed ranges &nbsp;•&nbsp; 100% Private</div>
         <h1 style="font-size:3rem;">🌸 MaternaCare</h1>
         <p style="font-size:1.1rem; max-width:640px; margin:0 auto;">
             Enter your pregnancy vitals and get an instant, easy-to-understand
             risk check — right from home, in just a couple of minutes.
         </p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.markdown("""
+    <div class="feature-strip">
+        <div class="feature-pill"><span class="emoji">⚡</span><span class="label">Instant Results</span></div>
+        <div class="feature-pill"><span class="emoji">🩺</span><span class="label">Doctor-grade Ranges</span></div>
+        <div class="feature-pill"><span class="emoji">🔒</span><span class="label">Private &amp; Secure</span></div>
+        <div class="feature-pill"><span class="emoji">🧠</span><span class="label">Explainable AI</span></div>
     </div>
     """, unsafe_allow_html=True)
 
@@ -339,9 +477,9 @@ if not st.session_state.logged_in:
 
     st.stop()
 
-# =========================
-# STEP 2 — WELCOME PAGE 
-# =========================
+# ==============================
+# STEP 2 — WELCOME PAGE WITH ICON 
+# =============================
 if not st.session_state.started:
     top_l, top_r = st.columns([6, 1])
     with top_r:
@@ -353,6 +491,10 @@ if not st.session_state.started:
 
     st.markdown(f"""
     <div class="hero" style="text-align:center; padding: 56px 48px;">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+        <div class="hero-badge">🌷 Personalized just for you</div>
         <h1 style="font-size:2.6rem;">🌸 Welcome, {st.session_state.user_name}</h1>
         <p style="font-size:1.05rem; max-width:640px; margin:0 auto;">
             Click below to enter your vitals and get an instant, easy-to-read
@@ -360,6 +502,16 @@ if not st.session_state.started:
         </p>
     </div>
     """, unsafe_allow_html=True)
+
+    s1, s2, s3 = st.columns(3)
+    with s1:
+        st.markdown('<div class="stat-card"><div class="num">2 min</div><div class="lbl">To Complete</div></div>', unsafe_allow_html=True)
+    with s2:
+        st.markdown('<div class="stat-card"><div class="num">19</div><div class="lbl">Health Signals Checked</div></div>', unsafe_allow_html=True)
+    with s3:
+        st.markdown('<div class="stat-card"><div class="num">3</div><div class="lbl">ML Models Combined</div></div>', unsafe_allow_html=True)
+
+    st.markdown("<br>", unsafe_allow_html=True)
 
     i1, i2, i3 = st.columns([1, 1, 1])
     with i2:
@@ -394,6 +546,7 @@ with back_l:
 
 st.markdown(f"""
 <div class="hero">
+<div class="blob blob-2"></div>
 <h1>🌸 MaternaCare</h1>
 <p>Hello {st.session_state.user_name} — enter your vitals below to get an instant risk check, with a simple explanation of why.</p>
 </div>
@@ -404,9 +557,10 @@ st.markdown(f"""
 # =========================
 @st.cache_resource
 def load_all():
-    model = joblib.load("voting_model_presplit_smote.pkl")   
-    feature_names = joblib.load("feature_names_presplit_smote.pkl")  
+    model = joblib.load("voting_model_presplit_smote.pkl")
+    feature_names = joblib.load("feature_names_presplit_smote.pkl")
     return model, feature_names
+
 
 model, feature_names = load_all()
 
@@ -426,9 +580,9 @@ with st.expander("ℹ️ How is my risk level decided? (Click to see)"):
 
 ### Risk Interpretation
 
-- 🔴 **High Risk:** Any parameter falls in the High Risk range or **3+** mild-risk indicators.
-- 🟡 **Mild Risk:** **1–2** parameters fall in the Mild Risk range.
-- 🟢 **Low Risk:** All parameters are within the Normal range.
+-  **High Risk:** Any parameter falls in the High Risk range or **3+** mild-risk indicators.
+-  **Mild Risk:** **1–2** parameters fall in the Mild Risk range.
+-  **Low Risk:** All parameters are within the Normal range.
 
 *Boundary values (e.g. exactly 130, 140, 95) are always counted on the Mild side, never left unflagged.*
 """)
@@ -496,7 +650,7 @@ if st.button("Check My Risk →"):
 
     probability = model.predict_proba(input_df)[0][1]
 
-    # ── High Risk rules  ──────────────────────────────────
+    # ── High Risk rules (severe abnormality) ──────────────────────────────────
     high_risk_flags = []
     if systolic_bp > 140:          high_risk_flags.append(f"Systolic BP {systolic_bp} mmHg > 140")
     if diastolic_bp > 90:          high_risk_flags.append(f"Diastolic BP {diastolic_bp} mmHg > 90")
@@ -508,7 +662,7 @@ if st.button("Check My Risk →"):
     if age > 40:                   high_risk_flags.append(f"Age {age} yrs > 40")
     if edema_severity >= 3:        high_risk_flags.append(f"Edema Severity {edema_severity} (severe)")
 
-    # ── Mild Risk rules ─────
+    # ── Mild Risk rules (moderate abnormality) — inclusive boundaries ─────────
     mild_risk_flags = []
     if 130 <= systolic_bp <= 140:          mild_risk_flags.append(f"Systolic BP {systolic_bp} mmHg (130–140)")
     if 85 <= diastolic_bp <= 90:           mild_risk_flags.append(f"Diastolic BP {diastolic_bp} mmHg (85–90)")
@@ -521,7 +675,7 @@ if st.button("Check My Risk →"):
     if edema_severity == 2:                mild_risk_flags.append(f"Edema Severity {edema_severity} (moderate)")
     if symptoms_score >= 6:                mild_risk_flags.append(f"Symptoms Score {symptoms_score}/10")
 
-    # ── Determine risk level ───────────────────────────────────────────────
+    # ── Determine risk level ──────────────────────────────────────────────────
     if high_risk_flags or probability >= 0.30 or len(mild_risk_flags) >= 3:
         risk_level = "HIGH"
     elif mild_risk_flags:
@@ -573,7 +727,6 @@ if st.button("Check My Risk →"):
             </div>
             """, unsafe_allow_html=True)
 
-      
         st.markdown(f"""
         <div class="debug-box">
             <b>Quick summary</b><br>
