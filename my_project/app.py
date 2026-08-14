@@ -431,7 +431,7 @@ DB_PATH = "maternacare.db"
 # Usernames listed here get an "Admin Dashboard" option after logging in,
 # from which they can see every registered user and every check-up ever
 # saved (not just their own). Add your own username to this set.
-ADMIN_USERNAMES = {"admin","kriti_001"}
+ADMIN_USERNAMES = {"admin", "kriti_001"}
 
 RAW_INPUT_COLUMNS = [
     'age_years', 'gravida_G', 'para_P', 'live_child_L', 'abortion_A', 'death_D',
@@ -784,13 +784,12 @@ def get_checkup_counts():
 def format_predictions_table(df):
     table_df = df[["username"] + HIST_TABLE_COLS].copy()
     table_df["created_at"] = pd.to_datetime(table_df["created_at"]).dt.strftime('%d %b %Y, %I:%M %p')
-    table_df["probability"] = (table_df["probability"].astype(float) * 100).round(1)
+    table_df = table_df.drop(columns=["probability"])
 
     col_rename = {
         "username": COL_USERNAME,
         "created_at": COL_DATE,
         "risk_level": COL_RISK,
-        "probability": COL_PROB,
     }
     for raw_col, fl_key in RAW_COL_TO_FL_KEY.items():
         col_rename[raw_col] = fl(fl_key)
