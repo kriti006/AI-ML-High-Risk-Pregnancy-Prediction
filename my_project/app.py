@@ -8,6 +8,12 @@ import os
 import datetime
 from catboost import CatBoostClassifier
 
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+model = joblib.load(os.path.join(BASE_DIR, "voting_model_presplit_smote.pkl"))
+feature_names = joblib.load(os.path.join(BASE_DIR, "feature_names_presplit_smote.pkl"))
+
 st.set_page_config(
     page_title="MaternaCare — Pregnancy Risk Predictor",
     page_icon="🌸",
