@@ -950,8 +950,8 @@ st.markdown(f"""
 # =========================
 @st.cache_resource
 def load_all():
-    model = joblib.load("voting_model_presplit_smote.pkl")
-    feature_names = joblib.load("feature_names_presplit_smote.pkl")
+    model = joblib.load(os.path.join(BASE_DIR, "voting_model_presplit_smote.pkl"))
+    feature_names = joblib.load(os.path.join(BASE_DIR, "feature_names_presplit_smote.pkl"))
     return model, feature_names
 
 
