@@ -428,6 +428,11 @@ div[data-testid="stSelectbox"] {
 # =========================
 DB_PATH = "maternacare.db"
 
+# Usernames listed here get an "Admin Dashboard" option after logging in,
+# from which they can see every registered user and every check-up ever
+# saved (not just their own). Add your own username to this set.
+ADMIN_USERNAMES = {"admin","kriti_001"}
+
 RAW_INPUT_COLUMNS = [
     'age_years', 'gravida_G', 'para_P', 'live_child_L', 'abortion_A', 'death_D',
     'gestational_age_weeks', 'systolic_bp_mmHg', 'diastolic_bp_mmHg',
@@ -574,6 +579,7 @@ STAT_MODELS = "3"
 STAT_MODELS_LBL = "ML Models Combined"
 START_BTN = "Start My Check-up →"
 HISTORY_BTN = "📊 View My History"
+ADMIN_BTN = "🛡️ Admin Dashboard"
 START_CARD_TITLE = "Enter Your Health Details"
 START_CARD_SUB = "Your vitals, lab reports & pregnancy history"
 LOGOUT = "Logout"
@@ -639,6 +645,19 @@ YRS = "yrs"
 COL_DATE = "Date"
 COL_RISK = "Risk Level"
 COL_PROB = "Probability (%)"
+
+ADMIN_TITLE = "🛡️ Admin Dashboard"
+ADMIN_SUB = "Every registered user and every saved check-up, all in one place."
+ADMIN_USERS_TITLE = "👥 Registered Users"
+ADMIN_ALL_CHECKUPS_TITLE = "📋 All Check-ups (Every User)"
+ADMIN_SELECT_USER = "View check-ups for a specific user"
+ADMIN_ALL_OPTION = "— All users —"
+ADMIN_NO_USERS = "No users have registered yet."
+ADMIN_NO_CHECKUPS = "No check-ups have been recorded yet."
+COL_USERNAME = "Username"
+COL_FULL_NAME = "Full Name"
+COL_JOINED = "Joined"
+COL_CHECKUPS = "Check-ups Done"
 
 
 def welcome_msg(name):
@@ -726,6 +745,58 @@ def do_logout():
     st.session_state.username = ""
     st.session_state.user_name = ""
     st.session_state.view = "welcome"
+
+
+def is_admin(username):
+    return username in ADMIN_USERNAMES
+
+
+def get_all_users():
+    conn = get_conn()
+    df = pd.read_sql_query(
+        "SELECT username, full_name, created_at FROM users ORDER BY created_at DESC",
+        conn
+    )
+    conn.close()
+    return df
+
+
+def get_all_predictions(limit=500):
+    conn = get_conn()
+    df = pd.read_sql_query(
+        "SELECT * FROM predictions ORDER BY created_at DESC LIMIT ?",
+        conn, params=(limit,)
+    )
+    conn.close()
+    return df
+
+
+def get_checkup_counts():
+    conn = get_conn()
+    df = pd.read_sql_query(
+        "SELECT username, COUNT(*) as checkup_count FROM predictions GROUP BY username",
+        conn
+    )
+    conn.close()
+    return dict(zip(df["username"], df["checkup_count"])) if not df.empty else {}
+
+
+def format_predictions_table(df):
+    table_df = df[["username"] + HIST_TABLE_COLS].copy()
+    table_df["created_at"] = pd.to_datetime(table_df["created_at"]).dt.strftime('%d %b %Y, %I:%M %p')
+    table_df["probability"] = (table_df["probability"].astype(float) * 100).round(1)
+
+    col_rename = {
+        "username": COL_USERNAME,
+        "created_at": COL_DATE,
+        "risk_level": COL_RISK,
+        "probability": COL_PROB,
+    }
+    for raw_col, fl_key in RAW_COL_TO_FL_KEY.items():
+        col_rename[raw_col] = fl(fl_key)
+
+    table_df = table_df.rename(columns=col_rename)
+    return table_df
 
 
 # =========================
@@ -860,7 +931,11 @@ if st.session_state.view == "welcome" and not st.session_state.started:
         </div>
         """, unsafe_allow_html=True)
 
-        bcol1, bcol2 = st.columns(2)
+        if is_admin(st.session_state.username):
+            bcol1, bcol2, bcol3 = st.columns(3)
+        else:
+            bcol1, bcol2 = st.columns(2)
+            bcol3 = None
         with bcol1:
             if st.button(START_BTN, key="start_btn"):
                 st.session_state.started = True
@@ -869,6 +944,11 @@ if st.session_state.view == "welcome" and not st.session_state.started:
             if st.button(HISTORY_BTN, key="history_btn_welcome"):
                 st.session_state.view = "history"
                 st.rerun()
+        if bcol3 is not None:
+            with bcol3:
+                if st.button(ADMIN_BTN, key="admin_btn_welcome"):
+                    st.session_state.view = "admin"
+                    st.rerun()
 
     st.markdown(f"""
     <div class="footer" style="margin-top:48px;">
@@ -918,6 +998,82 @@ if st.session_state.view == "history":
 
         table_df = table_df.rename(columns=col_rename)
         table_df = table_df.iloc[::-1].reset_index(drop=True)
+        st.dataframe(table_df, use_container_width=True, hide_index=True)
+
+    st.markdown(f'<div class="footer">{FOOTER}</div>', unsafe_allow_html=True)
+    st.stop()
+
+# ==============================
+# STEP 2c — ADMIN DASHBOARD (owner only)
+# ==============================
+if st.session_state.view == "admin":
+
+    # Guard: only usernames in ADMIN_USERNAMES may view this page, even if
+    # someone tries to reach it by manipulating session state.
+    if not is_admin(st.session_state.username):
+        st.session_state.view = "welcome"
+        st.rerun()
+
+    top_l, top_r = st.columns([6, 1])
+    with top_r:
+        if st.button(LOGOUT, key="logout_btn_admin"):
+            do_logout()
+            st.rerun()
+
+    if st.button(BACK_TO_HOME, key="back_home_from_admin"):
+        st.session_state.view = "welcome"
+        st.rerun()
+
+    st.markdown(f"""
+    <div class="hero">
+    <div class="blob blob-2"></div>
+    <h1>{ADMIN_TITLE}</h1>
+    <p>{ADMIN_SUB}</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    users_df = get_all_users()
+    all_preds_df = get_all_predictions()
+    checkup_counts = get_checkup_counts()
+
+    a1, a2, a3 = st.columns(3)
+    with a1:
+        st.markdown(f'<div class="stat-card"><div class="num">{len(users_df)}</div><div class="lbl">Total Users</div></div>', unsafe_allow_html=True)
+    with a2:
+        st.markdown(f'<div class="stat-card"><div class="num">{len(all_preds_df)}</div><div class="lbl">Total Check-ups</div></div>', unsafe_allow_html=True)
+    with a3:
+        high_count = int((all_preds_df["risk_level"] == "HIGH").sum()) if not all_preds_df.empty else 0
+        st.markdown(f'<div class="stat-card"><div class="num">{high_count}</div><div class="lbl">High Risk Check-ups</div></div>', unsafe_allow_html=True)
+
+    st.markdown("<br>", unsafe_allow_html=True)
+    st.markdown(f'<p class="section-label">{ADMIN_USERS_TITLE}</p>', unsafe_allow_html=True)
+
+    if users_df.empty:
+        st.info(ADMIN_NO_USERS)
+    else:
+        users_display = users_df.copy()
+        users_display["created_at"] = pd.to_datetime(users_display["created_at"]).dt.strftime('%d %b %Y, %I:%M %p')
+        users_display["checkup_count"] = users_display["username"].map(checkup_counts).fillna(0).astype(int)
+        users_display = users_display.rename(columns={
+            "username": COL_USERNAME,
+            "full_name": COL_FULL_NAME,
+            "created_at": COL_JOINED,
+            "checkup_count": COL_CHECKUPS,
+        })
+        st.dataframe(users_display, use_container_width=True, hide_index=True)
+
+    st.markdown("<br>", unsafe_allow_html=True)
+    st.markdown(f'<p class="section-label">{ADMIN_ALL_CHECKUPS_TITLE}</p>', unsafe_allow_html=True)
+
+    if all_preds_df.empty:
+        st.info(ADMIN_NO_CHECKUPS)
+    else:
+        user_options = [ADMIN_ALL_OPTION] + sorted(all_preds_df["username"].unique().tolist())
+        selected_user = st.selectbox(ADMIN_SELECT_USER, options=user_options, key="admin_user_filter")
+
+        filtered_df = all_preds_df if selected_user == ADMIN_ALL_OPTION else all_preds_df[all_preds_df["username"] == selected_user]
+
+        table_df = format_predictions_table(filtered_df)
         st.dataframe(table_df, use_container_width=True, hide_index=True)
 
     st.markdown(f'<div class="footer">{FOOTER}</div>', unsafe_allow_html=True)
