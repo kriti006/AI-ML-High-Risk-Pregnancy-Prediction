@@ -4,3 +4,4 @@ numpy
 joblib
 catboost
 scikit-learn
+imbalanced-learn
