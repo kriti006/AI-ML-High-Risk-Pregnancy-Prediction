@@ -191,27 +191,6 @@ header {
     font-size: 0.95rem;
 }
 
-.result-mild {
-    background: linear-gradient(135deg, #FEF9E8, #FEF0CC);
-    border: 1px solid #F5D87A;
-    border-radius: 16px;
-    padding: 28px 32px;
-    margin: 16px 0;
-}
-
-.result-mild h2 {
-    color: #B7770D;
-    font-family: 'Playfair Display', serif;
-    font-size: 1.6rem;
-    margin: 0 0 8px 0;
-}
-
-.result-mild p {
-    color: #7A5010;
-    margin: 0;
-    font-size: 0.95rem;
-}
-
 .result-safe {
     background: linear-gradient(135deg, #E8F5EE, #D5EDE0);
     border: 1px solid #A8D8BC;
@@ -428,9 +407,6 @@ div[data-testid="stSelectbox"] {
 # =========================
 DB_PATH = "maternacare.db"
 
-# Usernames listed here get an "Admin Dashboard" option after logging in,
-# from which they can see every registered user and every check-up ever
-# saved (not just their own). Add your own username to this set.
 ADMIN_USERNAMES = {"admin", "kriti_001"}
 
 RAW_INPUT_COLUMNS = [
@@ -587,24 +563,21 @@ BACK = "← Back"
 FOOTER = "MaternaCare gives a helpful early indication, not a medical diagnosis. Please always share these results with your doctor."
 HOW_DECIDED = "ℹ️ How is my risk level decided? (Click to see)"
 RISK_TABLE_MD = """
-| Parameter | Normal | Mild Risk | High Risk |
-|-----------|--------|-----------|-----------|
-| Systolic BP | <130 mmHg | 130–140 mmHg | >140 mmHg |
-| Diastolic BP | <85 mmHg | 85–90 mmHg | >90 mmHg |
-| Blood Sugar | 70–140 mg/dL | 140–200 mg/dL | >200 mg/dL |
-| HbA1c | <5.7% | 5.7–6.5% | >6.5% |
-| Hemoglobin | >11 g/dL | 9–11 g/dL | <9 g/dL |
-| BMI | 18.5–25 | 25–30 | >30 |
-| SpO₂ | >95% | 92–95% | <92% |
-| Age | 18–35 years | 35–40 years | >40 years |
+| Parameter | Normal | High Risk |
+|-----------|--------|-----------|
+| Systolic BP | <140 mmHg | >140 mmHg |
+| Diastolic BP | <90 mmHg | >90 mmHg |
+| Blood Sugar | 70–200 mg/dL | >200 mg/dL |
+| HbA1c | <6.5% | >6.5% |
+| Hemoglobin | >9 g/dL | <9 g/dL |
+| BMI | 18.5–30 | >30 |
+| SpO₂ | >92% | <92% |
+| Age | 18–40 years | >40 years |
 
 ### Risk Interpretation
 
--  **High Risk:** Any parameter falls in the High Risk range or **3+** mild-risk indicators.
--  **Mild Risk:** **1–2** parameters fall in the Mild Risk range.
--  **Low Risk:** All parameters are within the Normal range.
-
-*Boundary values (e.g. exactly 130, 140, 95) are always counted on the Mild side, never left unflagged.*
+-  **High Risk:** Any parameter falls in the High Risk range or ML probability >= 0.30.
+-  **Low Risk:** Parameters remain within safe operational ranges.
 """
 SECTION_YOUR_INFO = "Your Information"
 CARD_HISTORY = "Your Pregnancy History"
@@ -614,17 +587,12 @@ CHECK_RISK_BTN = "Check My Risk →"
 SECTION_RESULT = "Assessment Result"
 RESULT_HIGH_TITLE = "⚠ High Risk"
 RESULT_HIGH_MSG = "Please contact your doctor as soon as possible."
-RESULT_MILD_TITLE = "⚡ Mild Risk"
-RESULT_MILD_MSG = "A few things need watching. Please plan a follow-up with your doctor."
 RESULT_LOW_TITLE = "✓ Low Risk"
 RESULT_LOW_MSG = "Your vitals look within the normal range. Keep up your routine check-ups!"
 ML_PROB = "ML Probability"
 HIGH_FLAGS_TITLE = "🔴 HIGH RISK FLAGS"
-MILD_ALSO_TITLE = "🟡 ALSO MILD"
-MILD_FLAGS_TITLE = "🟡 MILD RISK FLAGS"
 QUICK_SUMMARY = "Quick summary"
 SERIOUS_CONCERNS = "Serious concerns found"
-MINOR_CONCERNS = "Minor concerns found"
 AI_CONFIDENCE = "AI confidence in risk"
 SAVED_NOTE = "✓ Saved to your history"
 WHY_RESULT = "🧠 Why This Result? (In Simple Terms)"
@@ -640,7 +608,6 @@ ABOVE_NORMAL = "above normal"
 BELOW_NORMAL = "below normal"
 WITHIN_NORMAL = "within normal range ✓"
 SEVERE = "severe"
-MODERATE = "moderate"
 YRS = "yrs"
 COL_DATE = "Date"
 COL_RISK = "Risk Level"
@@ -714,8 +681,6 @@ def sfl(key):
 
 HIST_TABLE_COLS = ["created_at"] + RAW_INPUT_COLUMNS + ["risk_level", "probability"]
 
-# Maps each raw DB column to its FIELD_LABELS key, so the history table can
-# show every recorded vital with a friendly header.
 RAW_COL_TO_FL_KEY = {
     "age_years": "age",
     "gravida_G": "gravida",
@@ -1007,8 +972,6 @@ if st.session_state.view == "history":
 # ==============================
 if st.session_state.view == "admin":
 
-    # Guard: only usernames in ADMIN_USERNAMES may view this page, even if
-    # someone tries to reach it by manipulating session state.
     if not is_admin(st.session_state.username):
         st.session_state.view = "welcome"
         st.rerun()
@@ -1124,32 +1087,34 @@ col1, col2, col3 = st.columns(3)
 
 with col1:
     st.markdown(f'<div class="card"><p class="card-title">{CARD_HISTORY}</p>', unsafe_allow_html=True)
-    age             = st.number_input(fl("age"),             min_value=10,  max_value=60,  value=25)
-    gravida         = st.number_input(fl("gravida"),         min_value=0,   max_value=15,  value=1)
-    para            = st.number_input(fl("para"),            min_value=0,   max_value=15,  value=0)
-    live_child      = st.number_input(fl("live_child"),      min_value=0,   max_value=15,  value=0)
-    abortion        = st.number_input(fl("abortion"),        min_value=0,   max_value=10,  value=0)
-    death           = st.number_input(fl("death"),           min_value=0,   max_value=10,  value=0)
-    gestational_age = st.number_input(fl("gestational_age"), min_value=1,   max_value=42,  value=20)
+    age             = st.number_input(fl("age"),             min_value=10,  max_value=60,  value=None,step=1,placeholder="25")
+    gravida         = st.number_input(fl("gravida"),         min_value=0,   max_value=15,  value=None,step=1,placeholder="1")
+    para            = st.number_input(fl("para"),            min_value=0,   max_value=15,  value=None,step=1,placeholder="0")
+    live_child      = st.number_input(fl("live_child"),      min_value=0,   max_value=15,  value=None,step=1,placeholder="0")
+    abortion        = st.number_input(fl("abortion"),        min_value=0,   max_value=10,  value=None,step=1,placeholder="0")
+    death           = st.number_input(fl("death"),           min_value=0,   max_value=10,  value=None,step=1,placeholder="0")
+    gestational_age = st.number_input(fl("gestational_age"), min_value=1,   max_value=42,  value=None,step=1,placeholder="20")
     st.markdown('</div>', unsafe_allow_html=True)
 
 with col2:
     st.markdown(f'<div class="card"><p class="card-title">{CARD_VITALS}</p>', unsafe_allow_html=True)
-    systolic_bp      = st.number_input(fl("systolic_bp"),      min_value=70,   max_value=200,   value=120)
-    diastolic_bp     = st.number_input(fl("diastolic_bp"),     min_value=40,   max_value=130,   value=80)
-    heart_rate       = st.number_input(fl("heart_rate"),       min_value=40,   max_value=180,   value=80)
-    body_temp        = st.number_input(fl("body_temp"),        min_value=95.0, max_value=106.0, value=98.6, step=0.1)
-    respiratory_rate = st.number_input(fl("respiratory_rate"), min_value=10,   max_value=40,    value=18)
-    spo2             = st.number_input(fl("spo2"),             min_value=70,   max_value=100,   value=98)
+    systolic_bp      = st.number_input(fl("systolic_bp"),      min_value=70,   max_value=200,   value=None,step=1,placeholder="120")
+    diastolic_bp     = st.number_input(fl("diastolic_bp"),     min_value=40,   max_value=130,   value=None,step=1,placeholder="80")
+    heart_rate       = st.number_input(fl("heart_rate"),       min_value=40,   max_value=180,   value=None,step=1,placeholder="80")
+    body_temp        = st.number_input(fl("body_temp"),        min_value=95.0, max_value=106.0, value=None,step=.1,placeholder="98.6")
+    respiratory_rate = st.number_input(fl("respiratory_rate"), min_value=10,   max_value=40,    value=None,step=1,placeholder="18")
+    spo2             = st.number_input(fl("spo2"),             min_value=70,   max_value=100,   value=None,step=1,placeholder="98")
     st.markdown('</div>', unsafe_allow_html=True)
 
 with col3:
     st.markdown(f'<div class="card"><p class="card-title">{CARD_LABS}</p>', unsafe_allow_html=True)
-    random_blood_sugar = st.number_input(fl("random_blood_sugar"), min_value=50,   max_value=400,   value=100)
-    hemoglobin         = st.number_input(fl("hemoglobin"),         min_value=4.0,  max_value=20.0,  value=11.0, step=0.1)
-    hba1c              = st.number_input(fl("hba1c"),              min_value=3.0,  max_value=15.0,  value=5.5,  step=0.1)
-    bmi                = st.number_input(fl("bmi"),                min_value=10.0, max_value=50.0,  value=22.0, step=0.1)
-    edema_severity     = st.selectbox(fl("edema_severity"),        options=[0, 1, 2, 3], index=0)
+    random_blood_sugar = st.number_input(fl("random_blood_sugar"), min_value=50,   max_value=400,   value=None,step=1,placeholder="100")
+    hemoglobin         = st.number_input(fl("hemoglobin"),         min_value=4.0,  max_value=20.0,  value=None, step=0.1,placeholder="11.0")
+    hba1c              = st.number_input(fl("hba1c"),              min_value=3.0,  max_value=15.0,  value=None,  step=0.1,placeholder="5.5")
+    bmi                = st.number_input(fl("bmi"),                min_value=10.0, max_value=50.0,  value=None, step=0.1,placeholder="22.0")
+    edema_severity_label = st.selectbox(fl("edema_severity"),options=["None", "Mild", "Severe"],index=None,placeholder="Select severity")
+    edema_map = {"None": 0, "Mild": 2, "Severe": 3}
+    edema_severity = edema_map.get(edema_severity_label)
     symptoms_score     = st.slider(fl("symptoms_score"),           min_value=0,    max_value=10,    value=2)
     st.markdown('</div>', unsafe_allow_html=True)
 
@@ -1168,6 +1133,16 @@ if st.button(CHECK_RISK_BTN):
         'spo2_percent': spo2, 'edema_severity': edema_severity,
         'symptoms_score_0_10': symptoms_score
     }
+
+    
+    missing = [
+        FIELD_LABELS[RAW_COL_TO_FL_KEY[col]]
+        for col in RAW_INPUT_COLUMNS
+        if raw_input.get(col) is None
+    ]
+    if missing:
+        st.error("⚠️ Kripya sabhi fields bharein. Missing: " + ", ".join(missing))
+        st.stop()
 
     input_df = pd.DataFrame([raw_input])
     for col in feature_names:
@@ -1189,24 +1164,9 @@ if st.button(CHECK_RISK_BTN):
     if age > 40:                   high_risk_flags.append(f"{sfl('age')} {age} {YRS} > 40")
     if edema_severity >= 3:        high_risk_flags.append(f"{sfl('edema_severity')} {edema_severity} ({SEVERE})")
 
-    # ── Mild Risk rules (moderate abnormality) — inclusive boundaries ─────────
-    mild_risk_flags = []
-    if 130 <= systolic_bp <= 140:          mild_risk_flags.append(f"{sfl('systolic_bp')} {systolic_bp} mmHg (130–140)")
-    if 85 <= diastolic_bp <= 90:           mild_risk_flags.append(f"{sfl('diastolic_bp')} {diastolic_bp} mmHg (85–90)")
-    if 140 < random_blood_sugar <= 200:    mild_risk_flags.append(f"{sfl('random_blood_sugar')} {random_blood_sugar} mg/dL (140–200)")
-    if 5.7 <= hba1c <= 6.5:                mild_risk_flags.append(f"{sfl('hba1c')} {hba1c}% (5.7–6.5)")
-    if 9.0 <= hemoglobin <= 11.0:          mild_risk_flags.append(f"{sfl('hemoglobin')} {hemoglobin} g/dL (9–11)")
-    if 25 < bmi <= 30:                     mild_risk_flags.append(f"{sfl('bmi')} {bmi} (25–30)")
-    if 92 <= spo2 <= 95:                   mild_risk_flags.append(f"{sfl('spo2')} {spo2}% (92–95)")
-    if 35 < age <= 40:                     mild_risk_flags.append(f"{sfl('age')} {age} {YRS} (35–40)")
-    if edema_severity == 2:                mild_risk_flags.append(f"{sfl('edema_severity')} {edema_severity} ({MODERATE})")
-    if symptoms_score >= 6:                mild_risk_flags.append(f"{sfl('symptoms_score')} {symptoms_score}/10")
-
     # ── Determine risk level ──────────────────────────────────────────────────
-    if high_risk_flags or probability >= 0.30 or len(mild_risk_flags) >= 3:
+    if high_risk_flags or probability >= 0.30:
         risk_level = "HIGH"
-    elif mild_risk_flags:
-        risk_level = "MILD"
     else:
         risk_level = "LOW"
 
@@ -1233,22 +1193,6 @@ if st.button(CHECK_RISK_BTN):
                 st.markdown(f'<p class="card-title" style="color:#C0392B;letter-spacing:1.5px;font-size:0.72rem;margin-top:16px;">{HIGH_FLAGS_TITLE}</p>', unsafe_allow_html=True)
                 for f in high_risk_flags:
                     st.markdown(f'<div class="factor-tag"><strong>↑</strong> {f}</div>', unsafe_allow_html=True)
-            if mild_risk_flags:
-                st.markdown(f'<p class="card-title" style="color:#B7770D;letter-spacing:1.5px;font-size:0.72rem;margin-top:16px;">{MILD_ALSO_TITLE}</p>', unsafe_allow_html=True)
-                for f in mild_risk_flags:
-                    st.markdown(f'<div class="factor-tag" style="border-left-color:#E8C43A;background:#FEF9E8;color:#7A5010;"><strong>!</strong> {f}</div>', unsafe_allow_html=True)
-
-        elif risk_level == "MILD":
-            st.markdown(f"""
-            <div class="result-mild">
-                <h2>{RESULT_MILD_TITLE}</h2>
-                <p>{RESULT_MILD_MSG}</p>
-            </div>
-            """, unsafe_allow_html=True)
-            if mild_risk_flags:
-                st.markdown(f'<p class="card-title" style="color:#B7770D;letter-spacing:1.5px;font-size:0.72rem;margin-top:16px;">{MILD_FLAGS_TITLE}</p>', unsafe_allow_html=True)
-                for f in mild_risk_flags:
-                    st.markdown(f'<div class="factor-tag" style="border-left-color:#E8C43A;background:#FEF9E8;color:#7A5010;"><strong>!</strong> {f}</div>', unsafe_allow_html=True)
 
         else:
             st.markdown(f"""
@@ -1261,8 +1205,7 @@ if st.button(CHECK_RISK_BTN):
         st.markdown(f"""
         <div class="debug-box">
             <b>{QUICK_SUMMARY}</b><br>
-            {SERIOUS_CONCERNS}: {len(high_risk_flags)}<br>
-            {MINOR_CONCERNS}: {len(mild_risk_flags)}
+            {SERIOUS_CONCERNS}: {len(high_risk_flags)}
         </div>
         """, unsafe_allow_html=True)
 
