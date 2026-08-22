@@ -427,6 +427,31 @@ div[data-testid="stTextInput"] input {
     background: #FAFAF8 !important;
 }
 
+/* Number input +/- step buttons — force a visible background and icon
+   color so they never blend into the page (this is what disappears on
+   the deployed dark-mode site even though it looks fine locally) */
+div[data-testid="stNumberInput"] div[data-baseweb="input"] {
+    background: #FAFAF8 !important;
+    border-color: #DDD5E8 !important;
+}
+button[data-testid="stNumberInputStepUp"],
+button[data-testid="stNumberInputStepDown"] {
+    background: #F3EEF8 !important;
+    border-left: 1px solid #DDD5E8 !important;
+    opacity: 1 !important;
+}
+button[data-testid="stNumberInputStepUp"]:hover,
+button[data-testid="stNumberInputStepDown"]:hover {
+    background: #E5DBF3 !important;
+}
+button[data-testid="stNumberInputStepUp"] svg,
+button[data-testid="stNumberInputStepDown"] svg,
+div[data-testid="stNumberInput"] button svg {
+    fill: #5A4080 !important;
+    color: #5A4080 !important;
+    opacity: 1 !important;
+}
+
 /* Selectbox closed value + dropdown popover menu */
 div[data-baseweb="select"] > div {
     background: #FAFAF8 !important;
