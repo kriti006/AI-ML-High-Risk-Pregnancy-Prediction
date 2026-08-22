@@ -456,6 +456,13 @@ button[data-testid="stNumberInputStepUp"]:hover,
 button[data-testid="stNumberInputStepDown"]:hover {
     background: #D4C0EC !important;
 }
+button[data-testid="stNumberInputStepUp"] svg,
+button[data-testid="stNumberInputStepDown"] svg,
+div[data-testid="stNumberInput"] button svg {
+    fill: #2E2140 !important;
+    color: #2E2140 !important;
+    opacity: 1 !important;
+}
 
 /* Selectbox closed value + dropdown popover menu */
 div[data-baseweb="select"] > div {
