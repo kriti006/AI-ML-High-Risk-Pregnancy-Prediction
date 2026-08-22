@@ -213,18 +213,6 @@ header {
 }
 
 
-.prob-badge {
-    display: inline-block;
-    background: #F3EEF8;
-    border: 1px solid #D4C8E8;
-    border-radius: 40px;
-    padding: 6px 20px;
-    font-size: 0.9rem;
-    font-weight: 500;
-    color: #5A4080;
-    margin-top: 12px;
-}
-
 
 div[data-testid="stNumberInput"] label,
 div[data-testid="stSelectbox"] label,
@@ -399,6 +387,145 @@ div[data-testid="stButton"] > button:hover {
 div[data-testid="stSelectbox"] {
     max-width: 160px;
 }
+
+/* ── Dark-mode safety net ─────────────────────────────────────────────
+   Streamlit's own theme can switch to dark based on the visitor's OS/
+   browser setting even when [theme] base="light" is set in config.toml
+   (some embeds/older clients ignore it). All custom cards above assume
+   a light background with dark text, so anywhere Streamlit injects its
+   own (light/white) text color on top of our white/light cards, that
+   text becomes invisible. The rules below force explicit, readable
+   colors on every element that showed this problem, regardless of the
+   active Streamlit theme. */
+
+.stApp, body, html {
+    color: #3D2C5E !important;
+}
+
+/* Generic body/markdown text inside our own light cards & containers */
+div[data-testid="stMarkdownContainer"] p,
+div[data-testid="stMarkdownContainer"] li,
+div[data-testid="stMarkdownContainer"] span,
+div[data-testid="stMarkdownContainer"] strong,
+div[data-testid="stMarkdownContainer"] h1,
+div[data-testid="stMarkdownContainer"] h2,
+div[data-testid="stMarkdownContainer"] h3,
+div[data-testid="stMarkdownContainer"] h4 {
+    color: #3D2C5E !important;
+}
+
+/* Number/text inputs and their containers */
+div[data-testid="stNumberInput"],
+div[data-testid="stTextInput"],
+div[data-testid="stSelectbox"],
+div[data-testid="stSlider"] {
+    background: transparent !important;
+}
+div[data-testid="stNumberInput"] input,
+div[data-testid="stTextInput"] input {
+    color: #333 !important;
+    background: #FAFAF8 !important;
+}
+
+/* Selectbox closed value + dropdown popover menu */
+div[data-baseweb="select"] > div {
+    background: #FAFAF8 !important;
+    color: #333 !important;
+    border-color: #DDD5E8 !important;
+}
+div[data-baseweb="popover"] li,
+div[data-baseweb="menu"] li,
+ul[role="listbox"] li {
+    background: #FFFFFF !important;
+    color: #3D2C5E !important;
+}
+div[data-baseweb="popover"] li:hover,
+div[data-baseweb="menu"] li:hover,
+ul[role="listbox"] li:hover {
+    background: #F3EEF8 !important;
+}
+
+/* Tabs (e.g. Login / Sign Up) — force explicit backgrounds so the
+   active and inactive tab never end up the same color in dark mode */
+div[data-testid="stTabs"] {
+    background: transparent !important;
+}
+div[data-baseweb="tab-list"] {
+    background: #F3EEF8 !important;
+    border-radius: 12px !important;
+    padding: 4px !important;
+    gap: 4px !important;
+}
+button[data-baseweb="tab"] {
+    background: transparent !important;
+    color: #7A6E8A !important;
+    border-radius: 8px !important;
+    opacity: 1 !important;
+}
+button[data-baseweb="tab"] p {
+    color: inherit !important;
+}
+button[data-baseweb="tab"][aria-selected="true"] {
+    background: #FFFFFF !important;
+    color: #5A4080 !important;
+    font-weight: 600 !important;
+    box-shadow: 0 2px 8px rgba(100, 80, 140, 0.12) !important;
+}
+button[data-baseweb="tab"][aria-selected="false"] {
+    background: transparent !important;
+    color: #7A6E8A !important;
+}
+div[data-baseweb="tab-highlight"] {
+    background-color: #7C5CBF !important;
+}
+div[data-baseweb="tab-border"] {
+    background-color: transparent !important;
+}
+div[data-testid="stTabs"] div[data-testid="stTabContent"] {
+    background: transparent !important;
+}
+
+/* Expander */
+div[data-testid="stExpander"] {
+    background: #FFFFFF !important;
+    border: 1px solid #EDE8F0 !important;
+    border-radius: 12px !important;
+}
+div[data-testid="stExpander"] summary {
+    color: #3D2C5E !important;
+}
+div[data-testid="stExpander"] p {
+    color: #3D2C5E !important;
+}
+
+/* Alerts: info / warning / error / success */
+div[data-testid="stAlert"] {
+    background: #FFFFFF !important;
+    border: 1px solid #EDE8F0 !important;
+}
+div[data-testid="stAlert"] p,
+div[data-testid="stAlert"] span {
+    color: #3D2C5E !important;
+}
+
+/* Dataframe / table */
+div[data-testid="stDataFrame"] {
+    background: #FFFFFF !important;
+}
+div[data-testid="stDataFrame"] * {
+    color: #3D2C5E !important;
+}
+
+/* Slider value + track labels */
+div[data-testid="stSlider"] label,
+div[data-testid="stSlider"] div[data-testid="stTickBar"] {
+    color: #5A4E6A !important;
+}
+
+/* Plotly chart backgrounds should stay transparent so our card shows through */
+div[data-testid="stPlotlyChart"] {
+    background: transparent !important;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -551,8 +678,6 @@ STAT_TIME = "2 min"
 STAT_TIME_LBL = "To Complete"
 STAT_SIGNALS = "19"
 STAT_SIGNALS_LBL = "Health Signals Checked"
-STAT_MODELS = "3"
-STAT_MODELS_LBL = "ML Models Combined"
 START_BTN = "Start My Check-up →"
 HISTORY_BTN = "📊 View My History"
 ADMIN_BTN = "🛡️ Admin Dashboard"
@@ -561,24 +686,6 @@ START_CARD_SUB = "Your vitals, lab reports & pregnancy history"
 LOGOUT = "Logout"
 BACK = "← Back"
 FOOTER = "MaternaCare gives a helpful early indication, not a medical diagnosis. Please always share these results with your doctor."
-HOW_DECIDED = "ℹ️ How is my risk level decided? (Click to see)"
-RISK_TABLE_MD = """
-| Parameter | Normal | High Risk |
-|-----------|--------|-----------|
-| Systolic BP | <140 mmHg | >140 mmHg |
-| Diastolic BP | <90 mmHg | >90 mmHg |
-| Blood Sugar | 70–200 mg/dL | >200 mg/dL |
-| HbA1c | <6.5% | >6.5% |
-| Hemoglobin | >9 g/dL | <9 g/dL |
-| BMI | 18.5–30 | >30 |
-| SpO₂ | >92% | <92% |
-| Age | 18–40 years | >40 years |
-
-### Risk Interpretation
-
--  **High Risk:** Any parameter falls in the High Risk range or ML probability >= 0.30.
--  **Low Risk:** Parameters remain within safe operational ranges.
-"""
 SECTION_YOUR_INFO = "Your Information"
 CARD_HISTORY = "Your Pregnancy History"
 CARD_VITALS = "Your Vital Signs"
@@ -589,11 +696,6 @@ RESULT_HIGH_TITLE = "⚠ High Risk"
 RESULT_HIGH_MSG = "Please contact your doctor as soon as possible."
 RESULT_LOW_TITLE = "✓ Low Risk"
 RESULT_LOW_MSG = "Your vitals look within the normal range. Keep up your routine check-ups!"
-ML_PROB = "ML Probability"
-HIGH_FLAGS_TITLE = "🔴 HIGH RISK FLAGS"
-QUICK_SUMMARY = "Quick summary"
-SERIOUS_CONCERNS = "Serious concerns found"
-AI_CONFIDENCE = "AI confidence in risk"
 SAVED_NOTE = "✓ Saved to your history"
 WHY_RESULT = "🧠 Why This Result? (In Simple Terms)"
 ELEVATED_PARAMS = "⬆ ELEVATED PARAMETERS"
@@ -603,6 +705,8 @@ HISTORY_TITLE = "📊 Your Vital Progress"
 HISTORY_SUB = "Track how your key health indicators have changed across your recent check-ups."
 NO_HISTORY = "You don't have any saved check-ups yet. Complete a risk check to start building your history."
 HISTORY_TABLE_TITLE = "📋 Your Recent Check-ups"
+HISTORY_CHARTS_TITLE = "📈 Your Vitals Over Time"
+HISTORY_CHARTS_SUB = "Each chart shows how a health signal has moved across your last check-ups."
 BACK_TO_HOME = "← Back to Home"
 ABOVE_NORMAL = "above normal"
 BELOW_NORMAL = "below normal"
@@ -611,7 +715,6 @@ SEVERE = "severe"
 YRS = "yrs"
 COL_DATE = "Date"
 COL_RISK = "Risk Level"
-COL_PROB = "Probability (%)"
 
 ADMIN_TITLE = "🛡️ Admin Dashboard"
 ADMIN_SUB = "Every registered user and every saved check-up, all in one place."
@@ -702,6 +805,86 @@ RAW_COL_TO_FL_KEY = {
     "edema_severity": "edema_severity",
     "symptoms_score_0_10": "symptoms_score",
 }
+
+# Groups of vitals plotted together on one chart (shared unit / scale)
+HISTORY_CHART_GROUPS = [
+    ("Blood Pressure", ["systolic_bp_mmHg", "diastolic_bp_mmHg"], "mmHg"),
+    ("Blood Sugar", ["random_blood_sugar_mg_dL"], "mg/dL"),
+    ("HbA1c", ["hba1c_percent"], "%"),
+    ("Hemoglobin", ["hemoglobin_g_dL"], "g/dL"),
+    ("BMI", ["bmi"], ""),
+    ("SpO2", ["spo2_percent"], "%"),
+    ("Heart Rate", ["heart_rate_bpm"], "bpm"),
+    ("Body Temperature", ["body_temperature_F"], "°F"),
+    ("Respiratory Rate", ["respiratory_rate_bpm"], "bpm"),
+    ("Symptoms Score", ["symptoms_score_0_10"], "/10"),
+    ("Edema Severity", ["edema_severity"], ""),
+]
+
+CHART_LINE_COLORS = ["#7C5CBF", "#5A8ABF", "#E8923A", "#1E7A48"]
+
+
+def render_vitals_charts(hist_df):
+    """Render a small multi-line chart for each vital / group using the check-up history."""
+    import plotly.graph_objects as go
+
+    plot_df = hist_df.copy()
+    plot_df["created_at"] = pd.to_datetime(plot_df["created_at"])
+    plot_df = plot_df.sort_values("created_at")
+    x_labels = plot_df["created_at"].dt.strftime('%d %b')
+
+    st.markdown(f'<p class="section-label">{HISTORY_CHARTS_TITLE}</p>', unsafe_allow_html=True)
+    st.markdown(f'<p style="color:#7A6E8A;font-size:0.88rem;margin-top:-8px;margin-bottom:16px;">{HISTORY_CHARTS_SUB}</p>', unsafe_allow_html=True)
+
+    n_cols = 2
+    chart_cols = st.columns(n_cols)
+    col_idx = 0
+
+    for title, cols, unit in HISTORY_CHART_GROUPS:
+        cols = [c for c in cols if c in plot_df.columns]
+        if not cols:
+            continue
+
+        fig = go.Figure()
+        for i, col in enumerate(cols):
+            series = plot_df[col]
+            if series.dropna().empty:
+                continue
+            label = sfl(RAW_COL_TO_FL_KEY[col]) if col in RAW_COL_TO_FL_KEY else "Risk Probability"
+            fig.add_trace(go.Scatter(
+                x=x_labels,
+                y=series,
+                mode="lines+markers",
+                name=label,
+                line=dict(color=CHART_LINE_COLORS[i % len(CHART_LINE_COLORS)], width=3),
+                marker=dict(size=7),
+            ))
+
+        if not fig.data:
+            continue
+
+        y_title = f"{title} ({unit})" if unit else title
+        fig.update_layout(
+            title=dict(text=title, font=dict(family="Playfair Display, serif", size=16, color="#3D2C5E")),
+            margin=dict(l=10, r=10, t=40, b=10),
+            height=260,
+            plot_bgcolor="rgba(0,0,0,0)",
+            paper_bgcolor="rgba(0,0,0,0)",
+            font=dict(family="DM Sans, sans-serif", color="#5A4E6A", size=12),
+            yaxis_title=y_title,
+            xaxis_title=None,
+            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1) if len(cols) > 1 else dict(visible=False),
+            hovermode="x unified",
+        )
+        fig.update_xaxes(showgrid=False)
+        fig.update_yaxes(showgrid=True, gridcolor="#EDE8F0")
+
+        with chart_cols[col_idx % n_cols]:
+            st.markdown('<div class="card">', unsafe_allow_html=True)
+            st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+            st.markdown('</div>', unsafe_allow_html=True)
+
+        col_idx += 1
 
 
 def do_logout():
@@ -875,13 +1058,11 @@ if st.session_state.view == "welcome" and not st.session_state.started:
     </div>
     """, unsafe_allow_html=True)
 
-    s1, s2, s3 = st.columns(3)
+    s1, s2 = st.columns(2)
     with s1:
         st.markdown(f'<div class="stat-card"><div class="num">{STAT_TIME}</div><div class="lbl">{STAT_TIME_LBL}</div></div>', unsafe_allow_html=True)
     with s2:
         st.markdown(f'<div class="stat-card"><div class="num">{STAT_SIGNALS}</div><div class="lbl">{STAT_SIGNALS_LBL}</div></div>', unsafe_allow_html=True)
-    with s3:
-        st.markdown(f'<div class="stat-card"><div class="num">{STAT_MODELS}</div><div class="lbl">{STAT_MODELS_LBL}</div></div>', unsafe_allow_html=True)
 
     st.markdown("<br>", unsafe_allow_html=True)
 
@@ -949,14 +1130,28 @@ if st.session_state.view == "history":
 
     if hist_df.empty:
         st.info(NO_HISTORY)
+    elif len(hist_df) == 1:
+        st.info("You have 1 saved check-up so far. Complete at least one more to see trend graphs.")
+        st.markdown(f'<p class="section-label">{HISTORY_TABLE_TITLE}</p>', unsafe_allow_html=True)
+        table_df = hist_df[HIST_TABLE_COLS].copy()
+        table_df['created_at'] = pd.to_datetime(table_df['created_at']).dt.strftime('%d %b %Y, %I:%M %p')
+        table_df = table_df.drop(columns=["probability"])
+        col_rename = {"created_at": COL_DATE, "risk_level": COL_RISK}
+        for raw_col, fl_key in RAW_COL_TO_FL_KEY.items():
+            col_rename[raw_col] = fl(fl_key)
+        table_df = table_df.rename(columns=col_rename)
+        st.dataframe(table_df, use_container_width=True, hide_index=True)
     else:
+        render_vitals_charts(hist_df)
+
+        st.markdown("<br>", unsafe_allow_html=True)
         st.markdown(f'<p class="section-label">{HISTORY_TABLE_TITLE}</p>', unsafe_allow_html=True)
 
         table_df = hist_df[HIST_TABLE_COLS].copy()
         table_df['created_at'] = pd.to_datetime(table_df['created_at']).dt.strftime('%d %b %Y, %I:%M %p')
-        table_df['probability'] = (table_df['probability'].astype(float) * 100).round(1)
+        table_df = table_df.drop(columns=["probability"])
 
-        col_rename = {"created_at": COL_DATE, "risk_level": COL_RISK, "probability": COL_PROB}
+        col_rename = {"created_at": COL_DATE, "risk_level": COL_RISK}
         for raw_col, fl_key in RAW_COL_TO_FL_KEY.items():
             col_rename[raw_col] = fl(fl_key)
 
@@ -1075,9 +1270,6 @@ def load_all():
 
 model, feature_names = load_all()
 
-with st.expander(HOW_DECIDED):
-    st.markdown(RISK_TABLE_MD)
-
 st.markdown(
     f'<p class="section-label">{SECTION_YOUR_INFO}</p>',
     unsafe_allow_html=True
@@ -1152,23 +1344,9 @@ if st.button(CHECK_RISK_BTN):
 
     probability = model.predict_proba(input_df)[0][1]
 
-    # ── High Risk rules (severe abnormality) ──────────────────────────────────
-    high_risk_flags = []
-    if systolic_bp > 140:          high_risk_flags.append(f"{sfl('systolic_bp')} {systolic_bp} mmHg > 140")
-    if diastolic_bp > 90:          high_risk_flags.append(f"{sfl('diastolic_bp')} {diastolic_bp} mmHg > 90")
-    if random_blood_sugar > 200:   high_risk_flags.append(f"{sfl('random_blood_sugar')} {random_blood_sugar} mg/dL > 200")
-    if hba1c > 6.5:                high_risk_flags.append(f"{sfl('hba1c')} {hba1c}% > 6.5")
-    if hemoglobin < 9.0:           high_risk_flags.append(f"{sfl('hemoglobin')} {hemoglobin} g/dL < 9.0")
-    if bmi > 30:                   high_risk_flags.append(f"{sfl('bmi')} {bmi} > 30")
-    if spo2 < 92:                  high_risk_flags.append(f"{sfl('spo2')} {spo2}% < 92")
-    if age > 40:                   high_risk_flags.append(f"{sfl('age')} {age} {YRS} > 40")
-    if edema_severity >= 3:        high_risk_flags.append(f"{sfl('edema_severity')} {edema_severity} ({SEVERE})")
-
-    # ── Determine risk level ──────────────────────────────────────────────────
-    if high_risk_flags or probability >= 0.30:
-        risk_level = "HIGH"
-    else:
-        risk_level = "LOW"
+    # ── Risk level is decided purely by the AI model's predicted probability ──
+    RISK_PROBABILITY_THRESHOLD = 0.30
+    risk_level = "HIGH" if probability >= RISK_PROBABILITY_THRESHOLD else "LOW"
 
     # ── Save to history ──────────────────────────────────────────────────────
     try:
@@ -1189,11 +1367,6 @@ if st.button(CHECK_RISK_BTN):
                 <p>{RESULT_HIGH_MSG}</p>
             </div>
             """, unsafe_allow_html=True)
-            if high_risk_flags:
-                st.markdown(f'<p class="card-title" style="color:#C0392B;letter-spacing:1.5px;font-size:0.72rem;margin-top:16px;">{HIGH_FLAGS_TITLE}</p>', unsafe_allow_html=True)
-                for f in high_risk_flags:
-                    st.markdown(f'<div class="factor-tag"><strong>↑</strong> {f}</div>', unsafe_allow_html=True)
-
         else:
             st.markdown(f"""
             <div class="result-safe">
@@ -1202,18 +1375,17 @@ if st.button(CHECK_RISK_BTN):
             </div>
             """, unsafe_allow_html=True)
 
-        st.markdown(f"""
-        <div class="debug-box">
-            <b>{QUICK_SUMMARY}</b><br>
-            {SERIOUS_CONCERNS}: {len(high_risk_flags)}
-        </div>
-        """, unsafe_allow_html=True)
-
         if saved_ok:
             st.markdown(f'<p style="color:#2E7D5A; font-size:0.85rem; margin-top:10px;">{SAVED_NOTE}</p>', unsafe_allow_html=True)
 
     with xai_col:
         st.markdown(f'<div class="card"><p class="card-title">{WHY_RESULT}</p>', unsafe_allow_html=True)
+        st.markdown(
+            '<p style="color:#7A6E8A;font-size:0.82rem;margin-top:-12px;margin-bottom:16px;">'
+            'This is just for your understanding — the badges below compare your numbers to typical reference ranges. '
+            'They do not decide your risk level; only the AI model does that.</p>',
+            unsafe_allow_html=True
+        )
 
         checks = [
             (systolic_bp,        90,   140,  sfl('systolic_bp'),      'mmHg'),
