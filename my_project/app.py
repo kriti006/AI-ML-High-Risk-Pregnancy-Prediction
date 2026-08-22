@@ -563,6 +563,20 @@ div[data-testid="stSlider"] div[data-testid="stTickBar"] {
 div[data-testid="stPlotlyChart"] {
     background: transparent !important;
 }
+
+/* Real bordered containers (st.container(border=True)) used for chart
+   cards — these actually nest their contents (unlike raw markdown divs),
+   so this is what makes the chart cards behind the vitals graphs opaque,
+   white, and readable instead of see-through against the page gradient. */
+div[data-testid="stVerticalBlockBorderWrapper"] {
+    background: #FFFFFF !important;
+    border-radius: 16px !important;
+    border: 1px solid #EDE8F0 !important;
+    box-shadow: 0 2px 16px rgba(100, 80, 140, 0.06) !important;
+}
+div[data-testid="stVerticalBlockBorderWrapper"] > div {
+    background: transparent !important;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -905,21 +919,23 @@ def render_vitals_charts(hist_df):
             title=dict(text=title, font=dict(family="Playfair Display, serif", size=16, color="#3D2C5E")),
             margin=dict(l=10, r=10, t=40, b=10),
             height=260,
-            plot_bgcolor="rgba(0,0,0,0)",
-            paper_bgcolor="rgba(0,0,0,0)",
-            font=dict(family="DM Sans, sans-serif", color="#5A4E6A", size=12),
+            plot_bgcolor="#FFFFFF",
+            paper_bgcolor="#FFFFFF",
+            font=dict(family="DM Sans, sans-serif", color="#4A4360", size=12),
             yaxis_title=y_title,
             xaxis_title=None,
             legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1) if len(cols) > 1 else dict(visible=False),
             hovermode="x unified",
         )
-        fig.update_xaxes(showgrid=False)
-        fig.update_yaxes(showgrid=True, gridcolor="#EDE8F0")
+        fig.update_xaxes(showgrid=False, color="#5A4E6A", linecolor="#D8D0E4")
+        fig.update_yaxes(showgrid=True, gridcolor="#EDE8F0", color="#5A4E6A", linecolor="#D8D0E4")
 
+        # Use a real bordered container (not a raw markdown <div>) so the
+        # chart actually renders *inside* the white card instead of
+        # floating on top of the page's pastel gradient background.
         with chart_cols[col_idx % n_cols]:
-            st.markdown('<div class="card">', unsafe_allow_html=True)
-            st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
-            st.markdown('</div>', unsafe_allow_html=True)
+            with st.container(border=True):
+                st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
 
         col_idx += 1
 
@@ -1414,11 +1430,6 @@ if st.button(CHECK_RISK_BTN):
 
         if saved_ok:
             st.markdown(f'<p style="color:#2E7D5A; font-size:0.85rem; margin-top:10px;">{SAVED_NOTE}</p>', unsafe_allow_html=True)
-
-        st.markdown("<br>", unsafe_allow_html=True)
-        if st.button(HISTORY_BTN, key="history_btn_result"):
-            st.session_state.view = "history"
-            st.rerun()
 
     with xai_col:
         st.markdown(f'<div class="card"><p class="card-title">{WHY_RESULT}</p>', unsafe_allow_html=True)
