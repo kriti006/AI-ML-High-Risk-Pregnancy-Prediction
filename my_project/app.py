@@ -944,7 +944,7 @@ def render_vitals_charts(hist_df):
             plot_bgcolor="#FFFFFF",
             paper_bgcolor="#FFFFFF",
             font=dict(family="DM Sans, sans-serif", color="#3D2C5E", size=12),
-            yaxis_title=y_title,
+            yaxis=dict(title=dict(text=y_title, font=dict(color="#3D2C5E", size=12))),
             xaxis_title=None,
             legend=dict(
                 orientation="h",
