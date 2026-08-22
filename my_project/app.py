@@ -577,6 +577,21 @@ div[data-testid="stVerticalBlockBorderWrapper"] {
 div[data-testid="stVerticalBlockBorderWrapper"] > div {
     background: transparent !important;
 }
+
+/* Streamlit fades each element in from low opacity while it (re)renders,
+   which is what makes newly-drawn content — especially the Plotly chart
+   cards — look washed-out/half-visible right after a rerun. Force every
+   element straight to full opacity with no transition delay. */
+[data-testid="stAppViewContainer"] * {
+    transition: none !important;
+}
+[data-stale="true"], [data-stale="true"] * {
+    opacity: 1 !important;
+}
+div[data-testid="stPlotlyChart"],
+div[data-testid="stPlotlyChart"] * {
+    opacity: 1 !important;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -915,20 +930,32 @@ def render_vitals_charts(hist_df):
             continue
 
         y_title = f"{title} ({unit})" if unit else title
+        has_legend = len(cols) > 1
         fig.update_layout(
-            title=dict(text=title, font=dict(family="Playfair Display, serif", size=16, color="#3D2C5E")),
-            margin=dict(l=10, r=10, t=40, b=10),
-            height=260,
+            title=dict(
+                text=title,
+                font=dict(family="Playfair Display, serif", size=16, color="#3D2C5E"),
+                x=0, xanchor="left",
+            ),
+            # Extra top margin when a legend is shown, so it sits on its
+            # own row under the title instead of overlapping it.
+            margin=dict(l=10, r=10, t=70 if has_legend else 40, b=10),
+            height=280 if has_legend else 260,
             plot_bgcolor="#FFFFFF",
             paper_bgcolor="#FFFFFF",
-            font=dict(family="DM Sans, sans-serif", color="#4A4360", size=12),
+            font=dict(family="DM Sans, sans-serif", color="#3D2C5E", size=12),
             yaxis_title=y_title,
             xaxis_title=None,
-            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1) if len(cols) > 1 else dict(visible=False),
+            legend=dict(
+                orientation="h",
+                yanchor="top", y=1.18,
+                xanchor="left", x=0,
+                font=dict(color="#3D2C5E", size=11),
+            ) if has_legend else dict(visible=False),
             hovermode="x unified",
         )
-        fig.update_xaxes(showgrid=False, color="#5A4E6A", linecolor="#D8D0E4")
-        fig.update_yaxes(showgrid=True, gridcolor="#EDE8F0", color="#5A4E6A", linecolor="#D8D0E4")
+        fig.update_xaxes(showgrid=False, color="#3D2C5E", linecolor="#C9B8E0", tickfont=dict(color="#3D2C5E"))
+        fig.update_yaxes(showgrid=True, gridcolor="#E5DEF0", color="#3D2C5E", linecolor="#C9B8E0", tickfont=dict(color="#3D2C5E"))
 
         # Use a real bordered container (not a raw markdown <div>) so the
         # chart actually renders *inside* the white card instead of
@@ -1386,7 +1413,7 @@ if st.button(CHECK_RISK_BTN):
         if raw_input.get(col) is None
     ]
     if missing:
-        st.error("⚠️ Kripya sabhi fields bharein. Missing: " + ", ".join(missing))
+        st.error("⚠️ Please fill in all fields. Missing: " + ", ".join(missing))
         st.stop()
 
     input_df = pd.DataFrame([raw_input])
