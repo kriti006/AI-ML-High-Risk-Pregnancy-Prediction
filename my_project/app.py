@@ -227,9 +227,15 @@ div[data-testid="stTextInput"] label {
 div[data-testid="stNumberInput"] input,
 div[data-testid="stTextInput"] input {
     border-radius: 10px !important;
-    border-color: #DDD5E8 !important;
-    background: #FAFAF8 !important;
-    color: #333 !important;
+    border-color: #C9B8E0 !important;
+    background: #EDE4F7 !important;
+    color: #3D2C5E !important;
+}
+
+div[data-testid="stNumberInput"] input::placeholder,
+div[data-testid="stTextInput"] input::placeholder {
+    color: #8B7FA8 !important;
+    opacity: 1 !important;
 }
 
 
@@ -423,40 +429,39 @@ div[data-testid="stSlider"] {
 }
 div[data-testid="stNumberInput"] input,
 div[data-testid="stTextInput"] input {
-    color: #333 !important;
-    background: #FAFAF8 !important;
+    color: #3D2C5E !important;
+    background: #EDE4F7 !important;
+}
+div[data-testid="stNumberInput"] input::placeholder,
+div[data-testid="stTextInput"] input::placeholder {
+    color: #8B7FA8 !important;
+    opacity: 1 !important;
 }
 
-/* Number input +/- step buttons — force a visible background and icon
-   color so they never blend into the page (this is what disappears on
-   the deployed dark-mode site even though it looks fine locally) */
+/* Number input +/- step buttons — give them the same attractive,
+   lightly-tinted background as the input itself so they never blend
+   into the page background on the deployed (dark-mode) site. Icon
+   color is left as-is, only the background changes. */
 div[data-testid="stNumberInput"] div[data-baseweb="input"] {
-    background: #FAFAF8 !important;
-    border-color: #DDD5E8 !important;
+    background: #EDE4F7 !important;
+    border-color: #C9B8E0 !important;
 }
 button[data-testid="stNumberInputStepUp"],
 button[data-testid="stNumberInputStepDown"] {
-    background: #F3EEF8 !important;
-    border-left: 1px solid #DDD5E8 !important;
+    background: #E0D2F0 !important;
+    border-left: 1px solid #C9B8E0 !important;
     opacity: 1 !important;
 }
 button[data-testid="stNumberInputStepUp"]:hover,
 button[data-testid="stNumberInputStepDown"]:hover {
-    background: #E5DBF3 !important;
-}
-button[data-testid="stNumberInputStepUp"] svg,
-button[data-testid="stNumberInputStepDown"] svg,
-div[data-testid="stNumberInput"] button svg {
-    fill: #5A4080 !important;
-    color: #5A4080 !important;
-    opacity: 1 !important;
+    background: #D4C0EC !important;
 }
 
 /* Selectbox closed value + dropdown popover menu */
 div[data-baseweb="select"] > div {
-    background: #FAFAF8 !important;
-    color: #333 !important;
-    border-color: #DDD5E8 !important;
+    background: #EDE4F7 !important;
+    color: #3D2C5E !important;
+    border-color: #C9B8E0 !important;
 }
 div[data-baseweb="popover"] li,
 div[data-baseweb="menu"] li,
