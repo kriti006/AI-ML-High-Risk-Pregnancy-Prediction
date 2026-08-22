@@ -1415,6 +1415,11 @@ if st.button(CHECK_RISK_BTN):
         if saved_ok:
             st.markdown(f'<p style="color:#2E7D5A; font-size:0.85rem; margin-top:10px;">{SAVED_NOTE}</p>', unsafe_allow_html=True)
 
+        st.markdown("<br>", unsafe_allow_html=True)
+        if st.button(HISTORY_BTN, key="history_btn_result"):
+            st.session_state.view = "history"
+            st.rerun()
+
     with xai_col:
         st.markdown(f'<div class="card"><p class="card-title">{WHY_RESULT}</p>', unsafe_allow_html=True)
         st.markdown(
