@@ -19,6 +19,13 @@ st.set_page_config(
     page_icon="🌸",
     layout="wide"
 )
+
+# =========================
+# Theme state (must exist before we render any CSS)
+# =========================
+if "theme" not in st.session_state:
+    st.session_state.theme = "light"
+
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Playfair+Display:wght@500;600&display=swap');
@@ -592,13 +599,240 @@ div[data-testid="stPlotlyChart"],
 div[data-testid="stPlotlyChart"] * {
     opacity: 1 !important;
 }
+
+/* ── Theme toggle button ──────────────────────────────────────────────
+   Rendered inside a keyed container (`theme_toggle_wrap`) so it gets its
+   own scoping class (`st-key-theme_toggle_wrap`) and can be styled as a
+   small round icon button instead of inheriting the full-width purple
+   gradient button style used everywhere else in the app. */
+div[class*="st-key-theme_toggle_wrap"] {
+    max-width: 58px;
+}
+div[class*="st-key-theme_toggle_wrap"] div[data-testid="stButton"] > button {
+    width: 46px !important;
+    height: 46px !important;
+    min-height: 46px !important;
+    border-radius: 50% !important;
+    padding: 0 !important;
+    font-size: 1.25rem !important;
+    line-height: 1 !important;
+    background: #FFFFFF !important;
+    color: #3D2C5E !important;
+    border: 1px solid #EDE8F0 !important;
+    box-shadow: 0 2px 10px rgba(100, 80, 140, 0.14) !important;
+}
+div[class*="st-key-theme_toggle_wrap"] div[data-testid="stButton"] > button:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 6px 16px rgba(100, 80, 140, 0.22) !important;
+}
 </style>
 """, unsafe_allow_html=True)
 
 # =========================
+# Dark theme overlay
+# =========================
+# This block is only injected when the user has toggled dark mode on. It
+# re-declares the same selectors as the base stylesheet above with a dark
+# palette, using !important so it safely wins regardless of injection
+# order. Keeping it separate (rather than rewriting the base CSS) means
+# light mode is completely untouched when the toggle is off.
+DARK_CSS = """
+<style>
+.stApp {
+    background: linear-gradient(160deg, #1B1625 0%, #1E1A2A 50%, #16211C 100%) !important;
+}
+.stApp, body, html {
+    color: #EDE7F5 !important;
+}
+.blob {
+    opacity: 0.20 !important;
+    filter: blur(4px) brightness(0.7) !important;
+}
+.hero {
+    background: linear-gradient(135deg, #2E1F2A 0%, #241F35 50%, #1A2A22 100%) !important;
+    border-color: rgba(160, 140, 190, 0.18) !important;
+}
+.hero h1 { color: #F0E6FA !important; }
+.hero p { color: #B8ACC8 !important; }
+.hero-badge {
+    background: rgba(255, 255, 255, 0.06) !important;
+    border-color: rgba(200, 180, 220, 0.2) !important;
+    color: #D8C8F0 !important;
+}
+.card, .feature-pill, .stat-card, .param-icon-btn, .debug-box {
+    background: #241E30 !important;
+    border-color: #352C45 !important;
+}
+.card-title, .section-label { color: #9A8DC0 !important; }
+.section-label::after { background: #352C45 !important; }
+.param-icon-btn h3 { color: #EDE7F5 !important; }
+.param-icon-btn p { color: #B8ACC8 !important; }
+.feature-pill .label { color: #C8BEDA !important; }
+.stat-card .num { color: #F0E6FA !important; }
+.stat-card .lbl { color: #9A8DC0 !important; }
+
+.result-high {
+    background: linear-gradient(135deg, #3A2020, #2E1A1A) !important;
+    border-color: #5A3030 !important;
+}
+.result-high h2 { color: #FF9080 !important; }
+.result-high p { color: #E0A898 !important; }
+.result-safe {
+    background: linear-gradient(135deg, #1E3A28, #16301E) !important;
+    border-color: #2E5A3E !important;
+}
+.result-safe h2 { color: #6FE0A0 !important; }
+.result-safe p { color: #A8D8BC !important; }
+
+/* Elevated (orange, no inline override) factor tags */
+.factor-tag {
+    background: #3A2A1A !important;
+    color: #F0C8A0 !important;
+}
+.factor-tag strong { color: #F0A868 !important; }
+/* Low (blue) and normal (green) variants are given inline styles in
+   Python, matched here by a fragment of their inline color so each
+   keeps its own hue in dark mode instead of turning orange. */
+.factor-tag[style*="#EEF3FE"] {
+    background: #1A2A3A !important;
+    color: #A8C8E8 !important;
+}
+.factor-tag[style*="#EEF7F2"] {
+    background: #1A3025 !important;
+    color: #A8E0C0 !important;
+}
+
+.footer { color: #8A7FA0 !important; border-top-color: #352C45 !important; }
+
+div[data-testid="stMarkdownContainer"] p,
+div[data-testid="stMarkdownContainer"] li,
+div[data-testid="stMarkdownContainer"] span,
+div[data-testid="stMarkdownContainer"] strong,
+div[data-testid="stMarkdownContainer"] h1,
+div[data-testid="stMarkdownContainer"] h2,
+div[data-testid="stMarkdownContainer"] h3,
+div[data-testid="stMarkdownContainer"] h4 {
+    color: #EDE7F5 !important;
+}
+
+div[data-testid="stNumberInput"] label,
+div[data-testid="stSelectbox"] label,
+div[data-testid="stSlider"] label,
+div[data-testid="stTextInput"] label {
+    color: #C8BEDA !important;
+}
+div[data-testid="stNumberInput"] input,
+div[data-testid="stTextInput"] input {
+    color: #EDE7F5 !important;
+    background: #2E2640 !important;
+    border-color: #4A3D63 !important;
+}
+div[data-testid="stNumberInput"] input::placeholder,
+div[data-testid="stTextInput"] input::placeholder {
+    color: #8A7FA0 !important;
+}
+div[data-testid="stNumberInput"] div[data-baseweb="input"] {
+    background: #2E2640 !important;
+    border-color: #4A3D63 !important;
+}
+button[data-testid="stNumberInputStepUp"],
+button[data-testid="stNumberInputStepDown"] {
+    background: #3A3050 !important;
+    border-left-color: #4A3D63 !important;
+}
+button[data-testid="stNumberInputStepUp"]:hover,
+button[data-testid="stNumberInputStepDown"]:hover {
+    background: #453A5E !important;
+}
+button[data-testid="stNumberInputStepUp"] svg,
+button[data-testid="stNumberInputStepDown"] svg,
+div[data-testid="stNumberInput"] button svg {
+    fill: #EDE7F5 !important;
+    color: #EDE7F5 !important;
+}
+
+div[data-baseweb="select"] > div {
+    background: #2E2640 !important;
+    color: #EDE7F5 !important;
+    border-color: #4A3D63 !important;
+}
+div[data-baseweb="popover"] li,
+div[data-baseweb="menu"] li,
+ul[role="listbox"] li {
+    background: #241E30 !important;
+    color: #EDE7F5 !important;
+}
+div[data-baseweb="popover"] li:hover,
+div[data-baseweb="menu"] li:hover,
+ul[role="listbox"] li:hover {
+    background: #352C45 !important;
+}
+
+div[data-baseweb="tab-list"] { background: #241E30 !important; }
+button[data-baseweb="tab"] { color: #9A8DC0 !important; }
+button[data-baseweb="tab"][aria-selected="true"] {
+    background: #352C45 !important;
+    color: #E8D8FA !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+}
+button[data-baseweb="tab"][aria-selected="false"] {
+    background: transparent !important;
+    color: #9A8DC0 !important;
+}
+div[data-baseweb="tab-highlight"] { background-color: #9A78D8 !important; }
+
+div[data-testid="stExpander"] {
+    background: #241E30 !important;
+    border-color: #352C45 !important;
+}
+div[data-testid="stExpander"] summary { color: #EDE7F5 !important; }
+div[data-testid="stExpander"] p { color: #EDE7F5 !important; }
+
+div[data-testid="stAlert"] {
+    background: #241E30 !important;
+    border-color: #352C45 !important;
+}
+div[data-testid="stAlert"] p, div[data-testid="stAlert"] span { color: #EDE7F5 !important; }
+
+div[data-testid="stDataFrame"] { background: #241E30 !important; }
+div[data-testid="stDataFrame"] * { color: #EDE7F5 !important; }
+
+div[data-testid="stSlider"] label,
+div[data-testid="stSlider"] div[data-testid="stTickBar"] { color: #B8ACC8 !important; }
+
+div[data-testid="stVerticalBlockBorderWrapper"] {
+    background: #241E30 !important;
+    border-color: #352C45 !important;
+}
+
+div[class*="st-key-theme_toggle_wrap"] div[data-testid="stButton"] > button {
+    background: #241E30 !important;
+    color: #F0D890 !important;
+    border-color: #352C45 !important;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4) !important;
+}
+</style>
+"""
+
+if st.session_state.theme == "dark":
+    st.markdown(DARK_CSS, unsafe_allow_html=True)
+
+
+def render_theme_toggle():
+    """Small round light/dark toggle, anchored to the far left of the page."""
+    tcol_icon, _tcol_spacer = st.columns([0.07, 0.93])
+    with tcol_icon:
+        with st.container(key="theme_toggle_wrap"):
+            icon = "☀️" if st.session_state.theme == "dark" else "🌙"
+            if st.button(icon, key="theme_toggle_btn", help="Switch to light mode" if st.session_state.theme == "dark" else "Switch to dark mode"):
+                st.session_state.theme = "light" if st.session_state.theme == "dark" else "dark"
+                st.rerun()
+
+
+# =========================
 # Database Setup
 # =========================
-DB_PATH = "maternacare.db"
+DB_PATH = os.path.join(BASE_DIR, "maternacare.db")
 
 ADMIN_USERNAMES = {"admin", "kriti_001"}
 
@@ -888,11 +1122,20 @@ HISTORY_CHART_GROUPS = [
 ]
 
 CHART_LINE_COLORS = ["#7C5CBF", "#5A8ABF", "#E8923A", "#1E7A48"]
+CHART_LINE_COLORS_DARK = ["#B79CE8", "#8AB6E8", "#F0B270", "#5FCB90"]
 
 
-def render_vitals_charts(hist_df):
+def render_vitals_charts(hist_df, theme="light"):
     """Render a small multi-line chart for each vital / group using the check-up history."""
     import plotly.graph_objects as go
+
+    is_dark = theme == "dark"
+    plot_bg = "#241E30" if is_dark else "#FFFFFF"
+    text_color = "#EDE7F5" if is_dark else "#3D2C5E"
+    grid_color = "#3A3350" if is_dark else "#E5DEF0"
+    axis_line_color = "#4A3D63" if is_dark else "#C9B8E0"
+    title_color = "#F0E6FA" if is_dark else "#3D2C5E"
+    line_colors = CHART_LINE_COLORS_DARK if is_dark else CHART_LINE_COLORS
 
     plot_df = hist_df.copy()
     plot_df["created_at"] = pd.to_datetime(plot_df["created_at"])
@@ -922,7 +1165,7 @@ def render_vitals_charts(hist_df):
                 y=series,
                 mode="lines+markers",
                 name=label,
-                line=dict(color=CHART_LINE_COLORS[i % len(CHART_LINE_COLORS)], width=3),
+                line=dict(color=line_colors[i % len(line_colors)], width=3),
                 marker=dict(size=7),
             ))
 
@@ -934,28 +1177,28 @@ def render_vitals_charts(hist_df):
         fig.update_layout(
             title=dict(
                 text=title,
-                font=dict(family="Playfair Display, serif", size=16, color="#3D2C5E"),
+                font=dict(family="Playfair Display, serif", size=16, color=title_color),
                 x=0, xanchor="left",
             ),
             # Extra top margin when a legend is shown, so it sits on its
             # own row under the title instead of overlapping it.
             margin=dict(l=10, r=10, t=70 if has_legend else 40, b=10),
             height=280 if has_legend else 260,
-            plot_bgcolor="#FFFFFF",
-            paper_bgcolor="#FFFFFF",
-            font=dict(family="DM Sans, sans-serif", color="#3D2C5E", size=12),
-            yaxis=dict(title=dict(text=y_title, font=dict(color="#3D2C5E", size=12))),
+            plot_bgcolor=plot_bg,
+            paper_bgcolor=plot_bg,
+            font=dict(family="DM Sans, sans-serif", color=text_color, size=12),
+            yaxis=dict(title=dict(text=y_title, font=dict(color=text_color, size=12))),
             xaxis_title=None,
             legend=dict(
                 orientation="h",
                 yanchor="top", y=1.18,
                 xanchor="left", x=0,
-                font=dict(color="#3D2C5E", size=11),
+                font=dict(color=text_color, size=11),
             ) if has_legend else dict(visible=False),
             hovermode="x unified",
         )
-        fig.update_xaxes(showgrid=False, color="#3D2C5E", linecolor="#C9B8E0", tickfont=dict(color="#3D2C5E"))
-        fig.update_yaxes(showgrid=True, gridcolor="#E5DEF0", color="#3D2C5E", linecolor="#C9B8E0", tickfont=dict(color="#3D2C5E"))
+        fig.update_xaxes(showgrid=False, color=text_color, linecolor=axis_line_color, tickfont=dict(color=text_color))
+        fig.update_yaxes(showgrid=True, gridcolor=grid_color, color=text_color, linecolor=axis_line_color, tickfont=dict(color=text_color))
 
         # Use a real bordered container (not a raw markdown <div>) so the
         # chart actually renders *inside* the white card instead of
@@ -1039,6 +1282,11 @@ if "started" not in st.session_state:
     st.session_state.started = False
 if "view" not in st.session_state:
     st.session_state.view = "welcome"
+
+# The toggle is rendered once, before any page branches below, so it
+# consistently appears pinned to the top-left corner on every screen —
+# login/signup, welcome, the vitals form, history, and admin.
+render_theme_toggle()
 
 # =========================
 # STEP 1 — LOGIN / SIGN UP PAGE
@@ -1222,7 +1470,7 @@ if st.session_state.view == "history":
         table_df = table_df.rename(columns=col_rename)
         st.dataframe(table_df, use_container_width=True, hide_index=True)
     else:
-        render_vitals_charts(hist_df)
+        render_vitals_charts(hist_df, st.session_state.theme)
 
         st.markdown("<br>", unsafe_allow_html=True)
         st.markdown(f'<p class="section-label">{HISTORY_TABLE_TITLE}</p>', unsafe_allow_html=True)
